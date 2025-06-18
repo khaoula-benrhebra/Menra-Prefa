@@ -1,8 +1,11 @@
 <template>
   <div id="app">
-    <AppHeader />
+    
+    <AppHeader v-if="$route.name !== 'Dashboard'" />
+    
     <router-view />
-    <AppFooter />
+    
+    <AppFooter v-if="$route.name !== 'Dashboard'" />
   </div>
 </template>
 

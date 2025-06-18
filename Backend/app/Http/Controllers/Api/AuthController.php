@@ -1,6 +1,4 @@
 <?php
-// app/Http/Controllers/Api/AuthController.php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -35,7 +33,7 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'password' => $request->password, // Corrigé: était 'mot_de_passe'
+            'password' => $request->password, 
             'role_id' => $role->id,
             'is_approved' => $isApproved,
         ]);

@@ -1,0 +1,38 @@
+<?php
+// app/Http/Middleware/RoleMiddleware.php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
+
+class RoleMiddleware
+{
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     */
+    public function handle(Request $request, Closure $next, ...$roles): Response
+    {
+        if (!Auth::check()) {
+            return response()->json(['message' => 'Non authentifié'], 401);
+        }
+
+        $user = Auth::user();
+        
+        // Vérifier si l'utilisateur est approuvé (sauf pour les clients)
+        if ($user->role->nom !== 'Client' && !$user->is_approved) {
+            return response()->json(['message' => 'Compte en attente d\'approbation'], 403);
+        }
+
+        // Vérifier si l'utilisateur a un des rôles requis
+        if (!in_array($user->role->nom, $roles)) {
+            return response()->json(['message' => 'Accès refusé'], 403);
+        }
+
+        return $next($request);
+    }
+}

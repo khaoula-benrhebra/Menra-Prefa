@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
+use App\Notifications\EmailVerificationNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -17,54 +20,36 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'required|string|max:20',
             'password' => 'required|string|min:8',
-            'role_nom' => 'required|string|in:Client,Agent commercial,Responsable production',
         ]);
 
-        // Vérifier que le rôle existe
-        $role = Role::where('nom', $request->role_nom)->first();
-        if (!$role) {
-            return response()->json(['message' => 'Rôle invalide'], 400);
+        // Récupérer le rôle Client
+        $clientRole = Role::where('nom', 'Client')->first();
+        if (!$clientRole) {
+            return response()->json(['message' => 'Erreur de configuration des rôles'], 500);
         }
 
-        // Déterminer si l'utilisateur doit être approuvé automatiquement
-        $isApproved = $request->role_nom === 'Client';
-
+        // Créer l'utilisateur (email non vérifié)
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'password' => $request->password, 
-            'role_id' => $role->id,
-            'is_approved' => $isApproved,
+            'password' => $request->password,
+            'role_id' => $clientRole->id,
+            'email_verified_at' => null, // Email non vérifié
         ]);
 
-        // Si c'est un client, on peut le connecter automatiquement
-        if ($isApproved) {
-            $token = $user->createToken('auth_token')->plainTextToken;
-            
-            return response()->json([
-                'message' => 'Inscription réussie',
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'phone' => $user->phone,
-                    'role' => $user->role->nom,
-                    'is_approved' => $user->is_approved,
-                ],
-                'token' => $token,
-            ], 201);
-        }
+        // Envoyer l'email de vérification
+        $user->notify(new EmailVerificationNotification());
 
         return response()->json([
-            'message' => 'Inscription réussie. Votre compte est en attente d\'approbation par un administrateur.',
+            'message' => 'Inscription réussie. Un email de vérification a été envoyé à votre adresse.',
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role->nom,
-                'is_approved' => $user->is_approved,
+                'email_verified' => false,
             ],
         ], 201);
     }
@@ -78,16 +63,17 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) { // Corrigé: était 'mot_de_passe'
+        if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['Les informations d\'identification fournies sont incorrectes.'],
             ]);
         }
 
-        // Vérifier si l'utilisateur est approuvé (sauf pour les clients et admins)
-        if (!in_array($user->role->nom, ['Client', 'Admin']) && !$user->is_approved) {
+        // Vérifier si l'email est vérifié pour les clients
+        if ($user->role->nom === 'Client' && !$user->hasVerifiedEmail()) {
             return response()->json([
-                'message' => 'Votre compte est en attente d\'approbation par un administrateur.',
+                'message' => 'Veuillez vérifier votre adresse email avant de vous connecter.',
+                'email_verified' => false,
             ], 403);
         }
 
@@ -101,10 +87,49 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role->nom,
-                'is_approved' => $user->is_approved,
+                'email_verified' => $user->hasVerifiedEmail(),
             ],
             'token' => $token,
         ]);
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        $user = User::findOrFail($request->route('id'));
+
+        if (!hash_equals((string) $request->route('hash'), sha1($user->getEmailForVerification()))) {
+            return response()->json(['message' => 'Lien de vérification invalide'], 400);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email déjà vérifié'], 200);
+        }
+
+        $user->markEmailAsVerified();
+
+        return response()->json([
+            'message' => 'Email vérifié avec succès. Vous pouvez maintenant vous connecter.',
+            'email_verified' => true,
+        ]);
+    }
+
+    public function resendVerificationEmail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email déjà vérifié'], 200);
+        }
+
+        $user->notify(new EmailVerificationNotification());
+
+        return response()->json(['message' => 'Email de vérification renvoyé']);
     }
 
     public function logout(Request $request)
@@ -128,7 +153,7 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'role' => $user->role->nom,
-                'is_approved' => $user->is_approved,
+                'email_verified' => $user->hasVerifiedEmail(),
             ],
         ]);
     }

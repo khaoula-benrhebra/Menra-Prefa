@@ -20,7 +20,7 @@ class AdminSeeder extends Seeder
                     'phone' => '0600000000',
                     'password' => 'password123', 
                     'role_id' => $adminRole->id,
-                    'is_approved' => true,
+                    'email_verified_at' => now(), // Admin vérifié automatiquement
                 ]
             );
         }

@@ -1,5 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+
+<div v-if="isLoading" class="min-h-screen bg-gray-50 flex items-center justify-center">
+  <div class="text-center">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-menara-blue mx-auto"></div>
+    <p class="mt-4 text-gray-600">Chargement...</p>
+  </div>
+</div>
+
+  <div v-else class="min-h-screen bg-gray-50">
     <!-- Navigation Header -->
     <nav class="bg-gradient-to-r from-menara-blue to-menara-dark shadow-lg">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,7 +52,7 @@
               <div class="h-8 w-8 rounded-full bg-menara-red flex items-center justify-center">
                 <span class="text-white font-medium text-sm">AD</span>
               </div>
-              <span class="ml-2 text-white text-sm">Admin</span>
+              <span class="ml-2 text-white text-sm">{{ user?.name || 'Admin' }}</span>
             </button>
             
             <!-- Dropdown Menu -->
@@ -56,8 +64,9 @@
                 <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profil</a>
                 <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Paramètres</a>
                 <div class="border-t border-gray-100"></div>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Déconnexion</a>
-              </div>
+<button @click="handleLogout" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+  Déconnexion
+</button>              </div>
             </div>
           </div>
 
@@ -128,7 +137,11 @@
 </template>
 
 <script>
+// Mise à jour de la section <script> dans DashboardView.vue
+
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuth } from '@/composables/useAuth'
 import StatsCards from '../components/dashboard/StatsCards.vue'
 import ChartsSection from '../components/dashboard/ChartsSection.vue'
 import UserManagement from '../components/dashboard/UserManagement.vue'
@@ -141,9 +154,13 @@ export default {
     UserManagement
   },
   setup() {
+    const router = useRouter()
+    const { user, isAdmin, checkAuth, logout } = useAuth()
+    
     const showUserMenu = ref(false)
     const showMobileMenu = ref(false)
     const lastUpdate = ref('')
+    const isLoading = ref(true)
 
     const toggleUserMenu = () => {
       showUserMenu.value = !showUserMenu.value
@@ -151,6 +168,17 @@ export default {
 
     const toggleMobileMenu = () => {
       showMobileMenu.value = !showMobileMenu.value
+    }
+
+    const handleLogout = async () => {
+      try {
+        await logout()
+        router.push('/login')
+      } catch (error) {
+        console.error('Erreur lors de la déconnexion:', error)
+        // Rediriger même en cas d'erreur
+        router.push('/login')
+      }
     }
 
     const updateLastUpdate = () => {
@@ -164,6 +192,25 @@ export default {
       })
     }
 
+    // Vérifier l'authentification au montage
+    const initializeDashboard = async () => {
+      try {
+        const isAuthenticated = await checkAuth()
+        
+        if (!isAuthenticated || !isAdmin.value) {
+          router.push('/login')
+          return
+        }
+        
+        updateLastUpdate()
+      } catch (error) {
+        console.error('Erreur d\'initialisation:', error)
+        router.push('/login')
+      } finally {
+        isLoading.value = false
+      }
+    }
+
     // Close dropdowns when clicking outside
     const handleClickOutside = (event) => {
       if (!event.target.closest('.relative')) {
@@ -172,16 +219,19 @@ export default {
     }
 
     onMounted(() => {
-      updateLastUpdate()
+      initializeDashboard()
       document.addEventListener('click', handleClickOutside)
     })
 
     return {
+      user,
       showUserMenu,
       showMobileMenu,
       lastUpdate,
+      isLoading,
       toggleUserMenu,
-      toggleMobileMenu
+      toggleMobileMenu,
+      handleLogout
     }
   }
 }

@@ -20,6 +20,14 @@
             {{ errorMessage }}
           </div>
 
+          <!-- Après le div d'erreur existant -->
+<div v-if="needsVerification" class="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg text-sm">
+  <p class="mb-2">{{ errorMessage }}</p>
+  <button @click="resendEmail" :disabled="isLoading" class="text-yellow-600 underline hover:text-yellow-800">
+    Renvoyer l'email de vérification
+  </button>
+</div>
+
           <!-- Email -->
           <div>
             <label for="email" class="block text-sm font-medium text-menara-dark">
@@ -113,8 +121,6 @@
 </template>
 
 <script>
-// Mise à jour de la section <script> dans LoginView.vue
-
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
@@ -123,7 +129,7 @@ export default {
   name: 'LoginView',
   setup() {
     const router = useRouter()
-    const { login, isLoading, isAdmin } = useAuth()
+    const { login, isLoading, resendVerificationEmail } = useAuth()
 
     const loginForm = ref({
       email: '',
@@ -133,6 +139,7 @@ export default {
 
     const showPassword = ref(false)
     const errorMessage = ref('')
+    const needsVerification = ref(false)
 
     const togglePasswordVisibility = () => {
       showPassword.value = !showPassword.value
@@ -140,6 +147,7 @@ export default {
 
     const handleLogin = async () => {
       errorMessage.value = ''
+      needsVerification.value = false
 
       try {
         const response = await login({
@@ -147,16 +155,32 @@ export default {
           password: loginForm.value.password
         })
 
-        // Vérifier le rôle et rediriger
+        // Rediriger selon le rôle
         if (response.user.role === 'Admin') {
           router.push('/dashboard')
+        } else if (response.user.role === 'Client') {
+          router.push('/dashboardClient')
         } else {
-          // Pour les autres rôles, rediriger vers l'accueil pour l'instant
           router.push('/')
         }
 
       } catch (error) {
-        errorMessage.value = error.message || 'Erreur de connexion. Veuillez réessayer.'
+        // Vérifier si c'est un problème de vérification d'email
+        if (error.message.includes('vérifier votre adresse email')) {
+          needsVerification.value = true
+          errorMessage.value = error.message
+        } else {
+          errorMessage.value = error.message || 'Erreur de connexion. Veuillez réessayer.'
+        }
+      }
+    }
+
+    const resendEmail = async () => {
+      try {
+        const response = await resendVerificationEmail(loginForm.value.email)
+        errorMessage.value = 'Email de vérification renvoyé avec succès!'
+      } catch (error) {
+        errorMessage.value = error.message
       }
     }
 
@@ -165,8 +189,10 @@ export default {
       showPassword,
       isLoading,
       errorMessage,
+      needsVerification,
       togglePasswordVisibility,
-      handleLogin
+      handleLogin,
+      resendEmail
     }
   }
 }

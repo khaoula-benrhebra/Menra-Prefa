@@ -1,4 +1,3 @@
-// src/composables/useAuth.js
 import { ref, computed } from 'vue'
 import { authAPI } from '@/api/endpoints'
 
@@ -11,8 +10,22 @@ export function useAuth() {
   // Computed properties
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const isAdmin = computed(() => user.value?.role === 'Admin')
+  const isClient = computed(() => user.value?.role === 'Client')
 
   // Méthodes
+  const register = async (userData) => {
+    try {
+      isLoading.value = true
+      const response = await authAPI.register(userData)
+      return response
+    } catch (error) {
+      console.error('Erreur d\'inscription:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const login = async (credentials) => {
     try {
       isLoading.value = true
@@ -64,6 +77,19 @@ export function useAuth() {
     }
   }
 
+  const resendVerificationEmail = async (email) => {
+    try {
+      isLoading.value = true
+      const response = await authAPI.resendVerificationEmail(email)
+      return response
+    } catch (error) {
+      console.error('Erreur renvoi email:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     // État
     user: computed(() => user.value),
@@ -73,10 +99,13 @@ export function useAuth() {
     // Computed
     isAuthenticated,
     isAdmin,
+    isClient,
     
     // Méthodes
+    register,
     login,
     logout,
-    checkAuth
+    checkAuth,
+    resendVerificationEmail
   }
 }

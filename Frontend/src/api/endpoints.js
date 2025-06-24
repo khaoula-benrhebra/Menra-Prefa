@@ -7,6 +7,10 @@ export const endpoints = {
     logout: `${API_BASE_URL}/auth/logout`,
     me: `${API_BASE_URL}/auth/me`,
     resendVerification: `${API_BASE_URL}/email/resend`
+  },
+  admin: {
+    createUser: `${API_BASE_URL}/admin/users`,
+    listUsers: `${API_BASE_URL}/admin/users`
   }
 }
 
@@ -93,6 +97,42 @@ export const authAPI = {
     if (!response.ok) {
       const error = await response.json()
       throw new Error(error.message || 'Erreur lors du renvoi de l\'email')
+    }
+    
+    return response.json()
+  }
+}
+
+export const adminAPI = {
+  async createUser(userData, token) {
+    const response = await fetch(endpoints.admin.createUser, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData)
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erreur lors de la création de l\'utilisateur')
+    }
+    
+    return response.json()
+  },
+
+  async listUsers(token) {
+    const response = await fetch(endpoints.admin.listUsers, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erreur lors de la récupération des utilisateurs')
     }
     
     return response.json()

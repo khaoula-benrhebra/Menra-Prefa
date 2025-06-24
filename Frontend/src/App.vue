@@ -1,11 +1,11 @@
 <template>
 	<div id="app">
 		
-		<AppHeader v-if="$route.name !== 'Dashboard'  && $route.name !== 'DashboardClient'" />
+		<AppHeader v-if="$route.name !== 'Dashboard'  && $route.name !== 'DashboardClient' && $route.name !== 'DashboardProduction' " />
 		
 		<router-view />
 		
-		<AppFooter v-if="$route.name !== 'Dashboard'  && $route.name !== 'DashboardClient'" />
+		<AppFooter v-if="$route.name !== 'Dashboard'  && $route.name !== 'DashboardClient' && $route.name !== 'DashboardProduction' " />
 	</div>
 </template>
 

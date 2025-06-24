@@ -5,6 +5,8 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import DashboardClientView from '../views/DashboardClient.vue'
+import ProductsView from '../views/ProductsView.vue'
+import DashboardProductionView from '../views/DashboardProductionView.vue'
 
 const routes = [
   {
@@ -35,7 +37,18 @@ const routes = [
     name: 'DashboardClient',
     component: DashboardClientView,
     meta: { requiresAuth: true, requiresClient: true }
-  }
+  },
+  {
+  path: '/products',
+  name: 'Products',
+  component: ProductsView
+},
+{
+  path: '/dashboardProduction',
+  name: 'DashboardProduction',
+  component: DashboardProductionView,
+  // meta: { requiresAuth: true, requiresProduction: true }
+},
 ]
 
 const router = createRouter({
@@ -82,6 +95,12 @@ router.beforeEach(async (to, from, next) => {
     return
   }
   
+  // Vérifier les permissions production
+if (to.meta.requiresProduction && !isProduction.value) {
+  next('/')
+  return
+}
+
   next()
 })
 

@@ -13,10 +13,13 @@ return new class extends Migration {
     }
 
     public function down(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
+{
+    Schema::table('users', function (Blueprint $table) {
+        
+        if (Schema::hasColumn('users', 'is_approved')) {
             $table->dropColumn('is_approved');
-        });
-    }
+        }
+    });
+}
 };
 

@@ -11,7 +11,7 @@ class PermissionsTableSeeder extends Seeder
     {
         $permissionIds = [];
         $permissions = [
-            'manage_users' => 'Gérer les utilisateurs internes de Menara',
+            'create_users' => 'créer les utilisateurs internes de Menara',
             
         ];
         
@@ -21,14 +21,14 @@ class PermissionsTableSeeder extends Seeder
         }
         
       
-        $adminRole = Role::where('name', 'Admin')->first();
-        $responProdRole = Role::where('name', 'Responsable production')->first();
-        $agentComerRole = Role::where('name', 'Agent commercial')->first();
-        $clientRole = Role::where('name', 'Client')->first();
+        $adminRole = Role::where('nom', 'Admin')->first();
+        $responProdRole = Role::where('nom', 'Responsable production')->first();
+        $agentComerRole = Role::where('nom', 'Agent commercial')->first();
+        $clientRole = Role::where('nom', 'Client')->first();
         
     
         $adminPermissions = [
-            $permissionIds['manage_users'],
+            $permissionIds['create_users'],
             
             
         ];

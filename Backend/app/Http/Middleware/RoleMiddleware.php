@@ -23,12 +23,7 @@ class RoleMiddleware
 
         $user = Auth::user();
         
-        // Vérifier si l'utilisateur est approuvé (sauf pour les clients)
-        if ($user->role->nom !== 'Client' && !$user->is_approved) {
-            return response()->json(['message' => 'Compte en attente d\'approbation'], 403);
-        }
-
-        // Vérifier si l'utilisateur a un des rôles requis
+      
         if (!in_array($user->role->nom, $roles)) {
             return response()->json(['message' => 'Accès refusé'], 403);
         }

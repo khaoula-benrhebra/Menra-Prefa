@@ -1,5 +1,5 @@
 <?php
-// database/seeders/DatabaseSeeder.php
+
 
 namespace Database\Seeders;
 
@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesSeeder::class,
             AdminSeeder::class,
+            PermissionsTableSeeder::class,
         ]);
     }
 }

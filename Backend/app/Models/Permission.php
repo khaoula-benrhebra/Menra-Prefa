@@ -14,8 +14,8 @@ class Permission extends Model
     protected $keyType = 'string';
     public $incrementing = false;
     
-    public function roles()
+     public function roles()
     {
-        return $this->belongsToMany(Role::class);
+        return $this->belongsToMany(Role::class, 'permission_role');
     }
 }

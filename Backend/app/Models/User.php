@@ -15,7 +15,7 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     use HasFactory, Notifiable, HasApiTokens, InteractsWithMedia;
     
     protected $fillable = [
-        'name', 'email', 'phone', 'password', 'role_id'
+        'name', 'email', 'phone', 'password', 'role_id','email_verified_at'
     ];
 
     protected $hidden = [

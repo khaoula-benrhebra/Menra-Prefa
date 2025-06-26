@@ -47,7 +47,7 @@ const routes = [
   path: '/dashboardProduction',
   name: 'DashboardProduction',
   component: DashboardProductionView,
-  // meta: { requiresAuth: true, requiresProduction: true }
+  meta: { requiresAuth: true, requiresProduction: true }
 },
 ]
 
@@ -58,7 +58,7 @@ const router = createRouter({
 
 // Guards de navigation
 router.beforeEach(async (to, from, next) => {
-  const { isAuthenticated, isAdmin, isClient, checkAuth } = useAuth()
+  const { isAuthenticated, isAdmin, isClient,isResProd, checkAuth  } = useAuth()
   
   // Vérifier l'authentification si un token existe
   if (localStorage.getItem('auth_token') && !isAuthenticated.value) {
@@ -71,7 +71,10 @@ router.beforeEach(async (to, from, next) => {
       next('/dashboard')
     } else if (isClient.value) {
       next('/dashboardClient')
-    } else {
+    }else if (isResProd.value){
+       next('/dashboardProduction')
+    }
+     else {
       next('/')
     }
     return
@@ -96,7 +99,7 @@ router.beforeEach(async (to, from, next) => {
   }
   
   // Vérifier les permissions production
-if (to.meta.requiresProduction && !isProduction.value) {
+if (to.meta.requiresProduction && !isResProd.value) {
   next('/')
   return
 }

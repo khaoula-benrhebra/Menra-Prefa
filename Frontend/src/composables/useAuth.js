@@ -11,7 +11,8 @@ export function useAuth() {
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const isAdmin = computed(() => user.value?.role === 'Admin')
   const isClient = computed(() => user.value?.role === 'Client')
-
+  const isResProd = computed(() => user.value?.role ==='Responsable production')
+  
   // Méthodes
   const register = async (userData) => {
     try {
@@ -100,6 +101,7 @@ export function useAuth() {
     isAuthenticated,
     isAdmin,
     isClient,
+    isResProd,
     
     // Méthodes
     register,

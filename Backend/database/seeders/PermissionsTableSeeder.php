@@ -12,6 +12,9 @@ class PermissionsTableSeeder extends Seeder
         $permissionIds = [];
         $permissions = [
             'create_users' => 'créer les utilisateurs internes de Menara',
+            'create_categories'=>'Créer des catégories ',
+            'update_categories'=>'Modifer des catégories',
+            'delete_categories'=>'Supprimer des catégories',
             
         ];
         
@@ -40,6 +43,9 @@ class PermissionsTableSeeder extends Seeder
 
 
         $responProdPermissions = [
+            $permissionIds['create_categories'],
+            $permissionIds['update_categories'],
+            $permissionIds['delete_categories'],
             
         ];
         $responProdRole->permissions()->attach($responProdPermissions);

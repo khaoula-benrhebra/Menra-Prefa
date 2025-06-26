@@ -160,12 +160,15 @@ export default {
           router.push('/dashboard')
         } else if (response.user.role === 'Client') {
           router.push('/dashboardClient')
-        } else {
+        }else if (response.user.role === 'Responsable production') {
+          router.push('/dashboardProduction') 
+        }
+         else {
           router.push('/')
         }
 
       } catch (error) {
-        // Vérifier si c'est un problème de vérification d'email
+        
         if (error.message.includes('vérifier votre adresse email')) {
           needsVerification.value = true
           errorMessage.value = error.message

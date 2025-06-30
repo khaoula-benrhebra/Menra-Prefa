@@ -13,9 +13,19 @@
       
       <!-- Content Area -->
       <main class="p-6">
+        <!-- Loading State -->
+        <div v-if="isLoading" class="flex justify-center items-center h-64">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        </div>
+        
+        <!-- Error State -->
+        <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div class="text-red-800">{{ error }}</div>
+        </div>
+        
         <!-- Categories Section -->
         <CategoriesSection 
-          v-if="activeSection === 'categories'"
+          v-else-if="activeSection === 'categories'"
           :categories="categories"
           @add-category="handleAddCategory"
           @edit-category="handleEditCategory"
@@ -24,7 +34,7 @@
         
         <!-- Products Section -->
         <ProductsSection 
-          v-if="activeSection === 'products'"
+          v-else-if="activeSection === 'products'"
           :products="products"
           :categories="categories"
           @add-product="handleAddProduct"
@@ -38,6 +48,7 @@
 
 <script>
 import { ref, onMounted } from 'vue'
+import { useCategories } from '@/composables/useCategories'
 import ProductionSidebar from '@/components/production/ProdSidebar.vue'
 import ProductionHeader from '@/components/production/ProdHeader.vue'
 import CategoriesSection from '@/components/production/CategoryManagement.vue'
@@ -53,64 +64,83 @@ export default {
   },
   setup() {
     const activeSection = ref('categories')
-    const categories = ref([
-      { id: 1, name: 'Poutrelles', description: 'Poutrelles en béton précontraint', products_count: 12 },
-      { id: 2, name: 'Dalles', description: 'Dalles alvéolaires préfabriquées', products_count: 8 },
-      { id: 3, name: 'Poteaux', description: 'Poteaux en béton armé', products_count: 6 }
-    ])
+    const error = ref(null)
     
-    const products = ref([
-      { 
-        id: 1, 
-        name: 'Poutrelle 12m', 
-        category_id: 1, 
-        category_name: 'Poutrelles',
-        description: 'Poutrelle béton précontraint 12 mètres',
-        price: 250.00,
-        stock: 45
-      },
-      { 
-        id: 2, 
-        name: 'Dalle alvéolaire 6m', 
-        category_id: 2, 
-        category_name: 'Dalles',
-        description: 'Dalle alvéolaire préfabriquée 6 mètres',
-        price: 180.00,
-        stock: 32
+    // Utiliser le composable des catégories
+    const { 
+      categories, 
+      isLoading, 
+      loadCategories, 
+      createCategory, 
+      updateCategory, 
+      deleteCategory 
+    } = useCategories()
+    
+    // Données temporaires pour les produits (à remplacer par un composable similaire)
+    const products = ref([])
+
+    // Charger les catégories au montage du composant
+    onMounted(async () => {
+      try {
+        await loadCategories()
+      } catch (err) {
+        error.value = err.message
       }
-    ])
+    })
 
     const handleSectionChange = (section) => {
       activeSection.value = section
+      error.value = null
     }
 
-    const handleAddCategory = (category) => {
-      // Logique d'ajout de catégorie
-      console.log('Ajouter catégorie:', category)
+    const handleAddCategory = async (categoryData) => {
+      try {
+        error.value = null
+        await createCategory(categoryData)
+        // Optionnel: afficher un message de succès
+        console.log('Catégorie créée avec succès')
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la création:', err)
+      }
     }
 
-    const handleEditCategory = (category) => {
-      // Logique de modification de catégorie
-      console.log('Modifier catégorie:', category)
+    const handleEditCategory = async (categoryData) => {
+      try {
+        error.value = null
+        await updateCategory(categoryData)
+        // Optionnel: afficher un message de succès
+        console.log('Catégorie modifiée avec succès')
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la modification:', err)
+      }
     }
 
-    const handleDeleteCategory = (categoryId) => {
-      // Logique de suppression de catégorie
-      console.log('Supprimer catégorie:', categoryId)
+    const handleDeleteCategory = async (categoryId) => {
+      try {
+        error.value = null
+        await deleteCategory(categoryId)
+        // Optionnel: afficher un message de succès
+        console.log('Catégorie supprimée avec succès')
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la suppression:', err)
+      }
     }
 
     const handleAddProduct = (product) => {
-      // Logique d'ajout de produit
+      // Logique d'ajout de produit (à implémenter)
       console.log('Ajouter produit:', product)
     }
 
     const handleEditProduct = (product) => {
-      // Logique de modification de produit
+      // Logique de modification de produit (à implémenter)
       console.log('Modifier produit:', product)
     }
 
     const handleDeleteProduct = (productId) => {
-      // Logique de suppression de produit
+      // Logique de suppression de produit (à implémenter)
       console.log('Supprimer produit:', productId)
     }
 
@@ -118,6 +148,8 @@ export default {
       activeSection,
       categories,
       products,
+      isLoading,
+      error,
       handleSectionChange,
       handleAddCategory,
       handleEditCategory,

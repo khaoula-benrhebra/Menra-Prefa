@@ -10,7 +10,7 @@ use Illuminate\Validation\Rule;
 class CategoryController extends Controller
 {
     /**
-     * Lister toutes les catégories
+     * Lister toutes les catégories (accessible à tous)
      */
     public function index()
     {
@@ -23,7 +23,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Afficher une catégorie spécifique
+     * Afficher une catégorie spécifique (accessible à tous)
      */
     public function show($id)
     {
@@ -42,7 +42,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Créer une nouvelle catégorie (réservé au Responsable production)
+     * Créer une nouvelle catégorie 
      */
     public function store(Request $request)
     {
@@ -66,7 +66,9 @@ class CategoryController extends Controller
         ], 201);
     }
 
- 
+    /**
+     * Mettre à jour une catégorie 
+     */
     public function update(Request $request, $id)
     {
         $this->authorize('update_categories');
@@ -100,6 +102,9 @@ class CategoryController extends Controller
         ]);
     }
 
+    /**
+     * Supprimer une catégorie 
+     */
     public function destroy($id)
     {
         $this->authorize('delete_categories');

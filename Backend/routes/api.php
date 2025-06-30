@@ -22,6 +22,12 @@ Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
     ->name('verification.verify');
 Route::post('/email/resend', [AuthController::class, 'resendVerificationEmail']);
 
+// Routes publiques pour les catégories (accessibles sans authentification)
+Route::prefix('categories')->group(function () {
+    Route::get('/', [CategoryController::class, 'index']);
+    Route::get('/{id}', [CategoryController::class, 'show']);
+});
+
 // Routes protégées par Sanctum
 Route::middleware(['auth:sanctum', 'auth.gates'])->group(function () {
     Route::prefix('auth')->group(function () {
@@ -35,18 +41,11 @@ Route::middleware(['auth:sanctum', 'auth.gates'])->group(function () {
         Route::get('/users', [UserController::class, 'index']);
     });
     
-    // Routes pour la gestion des catégories
-    Route::prefix('categories')->group(function () {
-        // Routes publiques (lecture) - accessibles à tous les utilisateurs connectés
-        Route::get('/', [CategoryController::class, 'index']);
-        Route::get('/{id}', [CategoryController::class, 'show']);
-        
-        // Routes protégées (écriture) - réservées au Responsable production
-        Route::middleware('role:Responsable production')->group(function () {
-            Route::post('/', [CategoryController::class, 'store']);
-            Route::put('/{id}', [CategoryController::class, 'update']);
-            Route::delete('/{id}', [CategoryController::class, 'destroy']);
-        });
+    // Routes protégées pour la gestion des catégories (écriture seulement)
+    Route::prefix('categories')->middleware('role:Responsable production')->group(function () {
+        Route::post('/', [CategoryController::class, 'store']);
+        Route::put('/{id}', [CategoryController::class, 'update']);
+        Route::delete('/{id}', [CategoryController::class, 'destroy']);
     });
     
     // Exemples de routes protégées par rôle

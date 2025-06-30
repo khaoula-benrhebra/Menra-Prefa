@@ -20,7 +20,7 @@
         </div>
         
         <div class="text-center bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div class="text-3xl md:text-4xl font-bold text-menara-red mb-2">{{ stats.categories }}</div>
+          <div class="text-3xl md:text-4xl font-bold text-menara-red mb-2">{{ categoriesCount }}</div>
           <div class="text-sm md:text-base opacity-90">Catégories</div>
         </div>
         
@@ -35,17 +35,46 @@
         </div>
       </div>
 
-      <!-- Catégories populaires -->
+      <!-- Catégories principales -->
       <div class="mt-12">
         <h3 class="text-xl font-semibold mb-6 text-center">Catégories principales</h3>
-        <div class="flex flex-wrap justify-center gap-3">
-          <span 
-            v-for="category in popularCategories" 
-            :key="category"
-            class="px-4 py-2 bg-menara-red/20 border border-menara-red/30 rounded-full text-sm font-medium backdrop-blur-sm hover:bg-menara-red/30 transition-colors cursor-pointer"
+        
+        <!-- Skeleton loader pour les catégories -->
+        <div v-if="isLoadingCategories" class="flex flex-wrap justify-center gap-3">
+          <div 
+            v-for="i in 6" 
+            :key="i"
+            class="px-4 py-2 bg-white/10 rounded-full animate-pulse"
           >
-            {{ category }}
+            <div class="h-4 bg-white/20 rounded w-16"></div>
+          </div>
+        </div>
+
+        <!-- Catégories dynamiques -->
+        <div v-else class="flex flex-wrap justify-center gap-3">
+          <span 
+            v-for="category in displayedCategories" 
+            :key="category.id"
+            class="px-4 py-2 bg-menara-red/20 border border-menara-red/30 rounded-full text-sm font-medium backdrop-blur-sm hover:bg-menara-red/30 transition-colors cursor-pointer"
+            @click="$emit('category-selected', category.name)"
+          >
+            {{ category.name }}
           </span>
+          
+          <!-- Afficher un indicateur s'il y a plus de catégories -->
+          <span 
+            v-if="categories.length > maxDisplayedCategories"
+            class="px-4 py-2 bg-white/10 border border-white/20 rounded-full text-sm font-medium backdrop-blur-sm"
+          >
+            +{{ categories.length - maxDisplayedCategories }} autres
+          </span>
+        </div>
+
+        <!-- Message si aucune catégorie -->
+        <div v-if="!isLoadingCategories && categories.length === 0" class="text-center">
+          <p class="text-white/70 text-sm">
+            Aucune catégorie disponible pour le moment
+          </p>
         </div>
       </div>
     </div>
@@ -64,27 +93,40 @@ import { ref, computed } from 'vue'
 
 export default {
   name: 'ProductsHeader',
-  setup() {
-    // Statistiques simulées
+  props: {
+    categories: {
+      type: Array,
+      default: () => []
+    },
+    isLoadingCategories: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['category-selected'],
+  setup(props) {
+    // Statistiques simulées (à terme, ces données viendront aussi d'une API)
     const stats = ref({
       totalProducts: 8,
-      categories: 6,
       inStock: 88,
       totalStock: 25000
     })
 
-    const popularCategories = ref([
-      'Pavage',
-      'Maçonnerie', 
-      'Structure',
-      'Canalisation',
-      'Planchers',
-      'Bordures'
-    ])
+    const maxDisplayedCategories = ref(6)
+
+    // Nombre de catégories dynamique
+    const categoriesCount = computed(() => props.categories.length)
+
+    // Catégories à afficher (limitées)
+    const displayedCategories = computed(() => {
+      return props.categories.slice(0, maxDisplayedCategories.value)
+    })
 
     return {
       stats,
-      popularCategories
+      maxDisplayedCategories,
+      categoriesCount,
+      displayedCategories
     }
   }
 }
@@ -134,6 +176,20 @@ export default {
 
 .absolute.blur-md {
   animation-delay: -4s;
+}
+
+/* Animation de chargement */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Responsive design */

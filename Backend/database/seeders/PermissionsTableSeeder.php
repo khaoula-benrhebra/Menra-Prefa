@@ -15,6 +15,9 @@ class PermissionsTableSeeder extends Seeder
             'create_categories'=>'Créer des catégories ',
             'update_categories'=>'Modifer des catégories',
             'delete_categories'=>'Supprimer des catégories',
+            'create_product'=>'créer un produit',
+            'update_product'=>'Modidfier un produit',
+            'delete_product'=>'Supprimer un produit',   
             
         ];
         
@@ -46,6 +49,9 @@ class PermissionsTableSeeder extends Seeder
             $permissionIds['create_categories'],
             $permissionIds['update_categories'],
             $permissionIds['delete_categories'],
+            $permissionIds['create_product'],
+            $permissionIds['update_product'],
+            $permissionIds['delete_product'],
             
         ];
         $responProdRole->permissions()->attach($responProdPermissions);

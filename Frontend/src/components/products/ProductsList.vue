@@ -60,21 +60,6 @@
                 </svg>
               </div>
             </div>
-            
-            <!-- Badge de stock -->
-            <div class="absolute top-3 right-3">
-              <span 
-                :class="[
-                  'px-2 py-1 rounded-full text-xs font-medium',
-                  product.inStock 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                ]"
-              >
-                {{ product.inStock ? 'En stock' : 'Rupture' }}
-              </span>
-            </div>
-
             <!-- Badge catégorie -->
             <div class="absolute top-3 left-3">
               <span class="px-2 py-1 bg-menara-red text-white rounded-full text-xs font-medium">
@@ -92,34 +77,11 @@
               {{ product.description }}
             </p>
 
-            <!-- Spécifications -->
-            <div class="mb-4">
-              <div class="flex flex-wrap gap-1">
-                <span
-                  v-for="spec in product.specifications.slice(0, 2)"
-                  :key="spec"
-                  class="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                >
-                  {{ spec }}
-                </span>
-                <span
-                  v-if="product.specifications.length > 2"
-                  class="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                >
-                  +{{ product.specifications.length - 2 }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Prix et stock -->
+            <!-- Prix -->
             <div class="flex justify-between items-center mb-4">
               <div>
                 <span class="text-2xl font-bold text-menara-red">{{ product.price }}€</span>
-                <span class="text-gray-500 text-sm">/ {{ product.unit }}</span>
-              </div>
-              <div class="text-right">
-                <div class="text-sm text-gray-500">Stock</div>
-                <div class="font-semibold text-menara-dark">{{ product.stockQuantity.toLocaleString() }}</div>
+                
               </div>
             </div>
 
@@ -128,9 +90,9 @@
               <button class="flex-1 bg-menara-red hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
                 Commander
               </button>
-              <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:border-menara-red hover:text-menara-red transition-colors">
+              <!-- <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:border-menara-red hover:text-menara-red transition-colors">
                 Détails
-              </button>
+              </button> -->
             </div>
           </div>
         </div>
@@ -159,26 +121,9 @@
                   <span class="px-2 py-1 bg-menara-red text-white rounded-full text-xs font-medium">
                     {{ product.category }}
                   </span>
-                  <span 
-                    :class="[
-                      'px-2 py-1 rounded-full text-xs font-medium',
-                      product.inStock 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    ]"
-                  >
-                    {{ product.inStock ? 'En stock' : 'Rupture' }}
-                  </span>
                 </div>
                 <p class="text-gray-600 mb-2">{{ product.description }}</p>
                 <div class="flex flex-wrap gap-2">
-                  <span
-                    v-for="spec in product.specifications"
-                    :key="spec"
-                    class="inline-block px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs"
-                  >
-                    {{ spec }}
-                  </span>
                 </div>
               </div>
             </div>
@@ -187,18 +132,14 @@
             <div class="text-right">
               <div class="mb-2">
                 <span class="text-2xl font-bold text-menara-red">{{ product.price }}€</span>
-                <span class="text-gray-500 text-sm">/ {{ product.unit }}</span>
-              </div>
-              <div class="text-sm text-gray-500 mb-3">
-                Stock: <span class="font-semibold">{{ product.stockQuantity.toLocaleString() }}</span>
               </div>
               <div class="flex space-x-2">
                 <button class="bg-menara-red hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
                   Commander
                 </button>
-                <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:border-menara-red hover:text-menara-red transition-colors">
+                <!-- <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:border-menara-red hover:text-menara-red transition-colors">
                   Détails
-                </button>
+                </button> -->
               </div>
             </div>
           </div>

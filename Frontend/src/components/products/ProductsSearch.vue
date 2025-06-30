@@ -31,9 +31,10 @@
 
         <!-- Filtres rapides -->
         <div class="mt-6">
-          <div class="flex flex-wrap justify-center gap-2">
+          <!-- Affichage conditionnel : seulement si des catégories sont disponibles -->
+          <div v-if="allFilters.length > 1" class="flex flex-wrap justify-center gap-2">
             <button
-              v-for="filter in quickFilters"
+              v-for="filter in allFilters"
               :key="filter"
               @click="applyQuickFilter(filter)"
               :class="[
@@ -52,6 +53,13 @@
             >
               Effacer
             </button>
+          </div>
+
+          <!-- Message si aucune catégorie disponible -->
+          <div v-else class="text-center py-4">
+            <p class="text-gray-500 text-sm">
+              Aucune catégorie disponible pour le filtrage
+            </p>
           </div>
         </div>
 
@@ -73,25 +81,35 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 export default {
   name: 'ProductsSearch',
+  props: {
+    categories: {
+      type: Array,
+      default: () => []
+    }
+  },
   emits: ['search', 'filter'],
   setup(props, { emit }) {
     const searchQuery = ref('')
     const activeFilter = ref('')
     
-    const quickFilters = ref([
-      'Tous',
-      'Pavage',
-      'Maçonnerie',
-      'Structure',
-      'Canalisation',
-      'Planchers',
-      'Bordures',
-      'En stock'
-    ])
+    // NE PLUS UTILISER les filtres de fallback
+    // Les catégories doivent venir uniquement de la base de données
+    const allFilters = computed(() => {
+      const fixedFilters = ['Tous']
+      
+      // Utiliser SEULEMENT les catégories de la base de données
+      if (props.categories && props.categories.length > 0) {
+        const categoryFilters = props.categories.map(cat => cat.name)
+        return [...fixedFilters, ...categoryFilters]
+      }
+      
+      // Si aucune catégorie n'est disponible, retourner seulement "Tous"
+      return fixedFilters
+    })
 
     const handleSearch = () => {
       emit('search', searchQuery.value)
@@ -108,13 +126,14 @@ export default {
         searchQuery.value = ''
         emit('search', '')
       } else {
-        activeFilter.value = filter
-        if (filter === 'En stock') {
-          searchQuery.value = ''
-          emit('filter', { type: 'stock', value: true })
-        } else {
+        // Vérifier que la catégorie existe bien dans la base de données
+        const categoryExists = props.categories.some(cat => cat.name === filter)
+        if (categoryExists) {
+          activeFilter.value = filter
           searchQuery.value = filter
           emit('search', filter)
+        } else {
+          console.warn(`Catégorie "${filter}" non trouvée dans la base de données`)
         }
       }
     }
@@ -123,16 +142,29 @@ export default {
       activeFilter.value = ''
       searchQuery.value = ''
       emit('search', '')
+      emit('filter', { type: 'clear' })
+    }
+
+    // Méthode pour sélectionner une catégorie depuis l'extérieur (appelée par le header)
+    const selectCategory = (categoryName) => {
+      // Vérifier que la catégorie existe avant de l'appliquer
+      const categoryExists = props.categories.some(cat => cat.name === categoryName)
+      if (categoryExists) {
+        applyQuickFilter(categoryName)
+      } else {
+        console.warn(`Tentative de sélection d'une catégorie inexistante: "${categoryName}"`)
+      }
     }
 
     return {
       searchQuery,
       activeFilter,
-      quickFilters,
+      allFilters,
       handleSearch,
       clearSearch,
       applyQuickFilter,
-      clearFilters
+      clearFilters,
+      selectCategory
     }
   }
 }

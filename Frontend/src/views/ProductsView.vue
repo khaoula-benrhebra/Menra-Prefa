@@ -1,13 +1,18 @@
 <template>
   <main class="flex-1">
-    <ProductsHeader />
-    <ProductsSearch @search="handleSearch" />
+    <ProductsHeader :categories="categories" />
+    <ProductsSearch 
+      @search="handleSearch" 
+      @filter="handleFilter"
+      :categories="categories" 
+    />
     <ProductsList :products="filteredProducts" />
   </main>
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useCategories } from '@/composables/useCategories'
 import ProductsHeader from '../components/products/ProductsHeader.vue'
 import ProductsSearch from '../components/products/ProductsSearch.vue'
 import ProductsList from '../components/products/ProductsList.vue'
@@ -21,8 +26,13 @@ export default {
   },
   setup() {
     const searchQuery = ref('')
+    const activeFilter = ref('')
+    const stockFilter = ref(null)
     
-    // Données des produits
+    // Utilisation du composable des catégories
+    const { categories, loadCategories, isLoading } = useCategories()
+    
+    // Données des produits (à terme, ces données viendront aussi d'une API)
     const products = ref([
       {
         id: 1,
@@ -122,25 +132,71 @@ export default {
       }
     ])
 
-    // Recherche filtrée
+    // Recherche et filtrage
     const filteredProducts = computed(() => {
-      if (!searchQuery.value) return products.value
-      
-      return products.value.filter(product => 
-        product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
+      let result = products.value
+
+      // Filtrage par recherche textuelle
+      if (searchQuery.value) {
+        result = result.filter(product => 
+          product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+          product.category.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+          product.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+        )
+      }
+
+      // Filtrage par catégorie
+      if (activeFilter.value && activeFilter.value !== 'Tous') {
+        result = result.filter(product => 
+          product.category.toLowerCase() === activeFilter.value.toLowerCase()
+        )
+      }
+
+      // Filtrage par stock
+      if (stockFilter.value !== null) {
+        result = result.filter(product => product.inStock === stockFilter.value)
+      }
+
+      return result
     })
 
     const handleSearch = (query) => {
       searchQuery.value = query
+      // Reset du filtre de catégorie si on fait une recherche textuelle
+      if (query && !categories.value.some(cat => cat.name.toLowerCase() === query.toLowerCase())) {
+        activeFilter.value = ''
+      }
     }
 
+    const handleFilter = (filter) => {
+      if (filter.type === 'category') {
+        activeFilter.value = filter.value
+        searchQuery.value = ''
+      } else if (filter.type === 'stock') {
+        stockFilter.value = filter.value
+      } else if (filter.type === 'clear') {
+        activeFilter.value = ''
+        searchQuery.value = ''
+        stockFilter.value = null
+      }
+    }
+
+    // Chargement des catégories au montage du composant
+    onMounted(async () => {
+      try {
+        await loadCategories()
+      } catch (error) {
+        console.error('Erreur lors du chargement des catégories:', error)
+      }
+    })
+
     return {
+      categories,
       products,
       filteredProducts,
-      handleSearch
+      isLoading,
+      handleSearch,
+      handleFilter
     }
   }
 }

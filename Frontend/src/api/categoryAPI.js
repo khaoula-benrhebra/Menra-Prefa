@@ -1,8 +1,9 @@
 const API_BASE_URL = 'http://localhost:8000/api'
 
 export const categoryEndpoints = {
-  list: `${API_BASE_URL}/categories`,
-  show: (id) => `${API_BASE_URL}/categories/${id}`,
+  // Utiliser la route publique pour la liste des catégories
+  list: `${API_BASE_URL}/public/categories`,
+  show: (id) => `${API_BASE_URL}/public/categories/${id}`,
   create: `${API_BASE_URL}/categories`,
   update: (id) => `${API_BASE_URL}/categories/${id}`,
   delete: (id) => `${API_BASE_URL}/categories/${id}`
@@ -10,14 +11,9 @@ export const categoryEndpoints = {
 
 export const categoryAPI = {
   async getAll(token = null) {
-    // Préparer les headers selon si on a un token ou pas
+    // Pour la route publique, pas besoin de token
     const headers = {
       'Content-Type': 'application/json',
-    }
-    
-    // Ajouter l'Authorization seulement si on a un token
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`
     }
     
     const response = await fetch(categoryEndpoints.list, {
@@ -32,12 +28,18 @@ export const categoryAPI = {
     return response.json()
   },
 
-  async getById(id, token) {
+  async getById(id, token = null) {
+    const headers = {
+      'Content-Type': 'application/json',
+    }
+    
+    // Ajouter le token seulement si disponible
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
     const response = await fetch(categoryEndpoints.show(id), {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      }
+      headers
     })
     
     if (!response.ok) {
@@ -48,6 +50,7 @@ export const categoryAPI = {
     return response.json()
   },
 
+  // Les autres méthodes restent inchangées car elles nécessitent une authentification
   async create(categoryData, token) {
     const response = await fetch(categoryEndpoints.create, {
       method: 'POST',

@@ -22,7 +22,7 @@ export function useCategories() {
         id: cat.id,
         name: cat.nom,
         description: cat.description,
-        products_count: 0 
+        products_count: cat.products_count || 0 // Utiliser le comptage de l'API
       }))
       return categories.value
     } catch (error) {
@@ -30,7 +30,6 @@ export function useCategories() {
 
       if (!token.value) {
         console.warn('Tentative de chargement des catégories sans authentification')
-        // On garde un tableau vide mais on ne throw pas l'erreur
         categories.value = []
         return categories.value
       }
@@ -55,7 +54,7 @@ export function useCategories() {
         id: response.category.id,
         name: response.category.nom,
         description: response.category.description,
-        products_count: 0
+        products_count: response.category.products_count || 0
       }
       categories.value.push(newCategory)
       
@@ -84,7 +83,7 @@ export function useCategories() {
           id: response.category.id,
           name: response.category.nom,
           description: response.category.description,
-          products_count: categories.value[index].products_count
+          products_count: response.category.products_count || categories.value[index].products_count
         }
       }
       

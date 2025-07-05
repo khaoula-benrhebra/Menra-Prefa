@@ -1,7 +1,6 @@
 const API_BASE_URL = 'http://localhost:8000/api'
 
 export const categoryEndpoints = {
-  // Utiliser la route publique pour la liste des catégories
   list: `${API_BASE_URL}/public/categories`,
   show: (id) => `${API_BASE_URL}/public/categories/${id}`,
   create: `${API_BASE_URL}/categories`,
@@ -11,7 +10,6 @@ export const categoryEndpoints = {
 
 export const categoryAPI = {
   async getAll(token = null) {
-    // Pour la route publique, pas besoin de token
     const headers = {
       'Content-Type': 'application/json',
     }
@@ -33,7 +31,6 @@ export const categoryAPI = {
       'Content-Type': 'application/json',
     }
     
-    // Ajouter le token seulement si disponible
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
     }
@@ -50,7 +47,6 @@ export const categoryAPI = {
     return response.json()
   },
 
-  // Les autres méthodes restent inchangées car elles nécessitent une authentification
   async create(categoryData, token) {
     const response = await fetch(categoryEndpoints.create, {
       method: 'POST',

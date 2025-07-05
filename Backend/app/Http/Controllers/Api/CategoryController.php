@@ -14,7 +14,8 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::all();
+        // Charger les catégories avec le comptage des produits
+        $categories = Category::withCount('products')->get();
 
         return response()->json([
             'message' => 'Liste des catégories récupérée avec succès',
@@ -27,7 +28,8 @@ class CategoryController extends Controller
      */
     public function show($id)
     {
-        $category = Category::find($id);
+        // Charger la catégorie avec le comptage des produits
+        $category = Category::withCount('products')->find($id);
 
         if (!$category) {
             return response()->json([
@@ -59,6 +61,8 @@ class CategoryController extends Controller
             'nom' => $request->nom,
             'description' => $request->description,
         ]);
+
+        $category = Category::withCount('products')->find($category->id);
 
         return response()->json([
             'message' => 'Catégorie créée avec succès',
@@ -95,6 +99,9 @@ class CategoryController extends Controller
             'nom' => $request->nom,
             'description' => $request->description,
         ]);
+
+        // Recharger avec le comptage des produits
+        $category = Category::withCount('products')->find($category->id);
 
         return response()->json([
             'message' => 'Catégorie modifiée avec succès',

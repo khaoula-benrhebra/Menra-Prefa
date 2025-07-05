@@ -25,7 +25,9 @@ class ProductController extends Controller
                 'stock_min' => $product->stock_min,
                 'stock_actuel' => $product->stock_actuel,
                 'category' => $product->category,
-                'image' => $product->getFirstMediaUrl() ?: null,
+                'image' => $product->getFirstMediaUrl('products') 
+                    ? url($product->getFirstMediaUrl('products')) 
+                    : null,
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
             ];
@@ -60,7 +62,9 @@ class ProductController extends Controller
                 'stock_min' => $product->stock_min,
                 'stock_actuel' => $product->stock_actuel,
                 'category' => $product->category,
-                'image' => $product->getFirstMediaUrl() ?: null,
+                'image' => $product->getFirstMediaUrl('products') 
+                    ? url($product->getFirstMediaUrl('products')) 
+                    : null,
                 'created_at' => $product->created_at,
                 'updated_at' => $product->updated_at,
             ]
@@ -76,12 +80,12 @@ class ProductController extends Controller
 
         $request->validate([
             'nom' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
             'prix_unitaire' => 'required|numeric|min:0',
             'stock_min' => 'required|integer|min:0',
             'stock_actuel' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
         ]);
 
         $product = Product::create([
@@ -94,7 +98,10 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $product->addMediaFromRequest('image')->toMediaCollection();
+            // Ajouter l'image à la collection avec un nom spécifique
+            $product->addMediaFromRequest('image')
+                ->usingName($request->nom)
+                ->toMediaCollection('products');
         }
 
         $product->load(['category', 'media']);
@@ -109,13 +116,15 @@ class ProductController extends Controller
                 'stock_min' => $product->stock_min,
                 'stock_actuel' => $product->stock_actuel,
                 'category' => $product->category,
-                'image' => $product->getFirstMediaUrl() ?: null,
+                'image' => $product->getFirstMediaUrl('products') 
+                    ? url($product->getFirstMediaUrl('products')) 
+                    : null,
             ]
         ], 201);
     }
 
     /**
-     * Modifier un produit $
+     * Modifier un produit 
      */
     public function update(Request $request, $id)
     {
@@ -131,12 +140,12 @@ class ProductController extends Controller
 
         $request->validate([
             'nom' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
             'prix_unitaire' => 'required|numeric|min:0',
             'stock_min' => 'required|integer|min:0',
             'stock_actuel' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', 
         ]);
 
         $product->update([
@@ -149,8 +158,10 @@ class ProductController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $product->clearMediaCollection();
-            $product->addMediaFromRequest('image')->toMediaCollection();
+            $product->clearMediaCollection('products');
+            $product->addMediaFromRequest('image')
+                ->usingName($request->nom)
+                ->toMediaCollection('products');
         }
 
         $product->load(['category', 'media']);
@@ -165,7 +176,9 @@ class ProductController extends Controller
                 'stock_min' => $product->stock_min,
                 'stock_actuel' => $product->stock_actuel,
                 'category' => $product->category,
-                'image' => $product->getFirstMediaUrl() ?: null,
+                'image' => $product->getFirstMediaUrl('products') 
+                    ? url($product->getFirstMediaUrl('products')) 
+                    : null,
             ]
         ]);
     }
@@ -185,6 +198,8 @@ class ProductController extends Controller
             ], 404);
         }
 
+        // Supprimer les médias associés avant de supprimer le produit
+        $product->clearMediaCollection('products');
         $product->delete();
 
         return response()->json([

@@ -44,6 +44,23 @@
           </svg>
           <span class="font-medium">Produits</span>
         </button>
+        
+        <!-- Raw Materials -->
+        <button
+          @click="$emit('section-changed', 'raw-materials')"
+          :class="[
+            'w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors duration-200',
+            activeSection === 'raw-materials' 
+              ? 'bg-menara-red text-white' 
+              : 'text-gray-700 hover:bg-gray-100'
+          ]"
+        >
+          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.78 0-2.674-2.155-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+          </svg>
+          <span class="font-medium">Matières Premières</span>
+        </button>
       </div>
     </nav>
 

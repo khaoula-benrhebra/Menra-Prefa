@@ -41,6 +41,14 @@
           @edit-product="handleEditProduct"
           @delete-product="handleDeleteProduct"
         />
+
+        <RawMaterialsSection 
+          v-else-if="activeSection === 'raw-materials'"
+          :raw-materials="rawMaterials"
+          @add-raw-material="handleAddRawMaterial"
+          @edit-raw-material="handleEditRawMaterial"
+          @delete-raw-material="handleDeleteRawMaterial"
+        />
       </main>
     </div>
   </div>
@@ -54,6 +62,8 @@ import ProductionSidebar from '@/components/production/ProdSidebar.vue'
 import ProductionHeader from '@/components/production/ProdHeader.vue'
 import CategoriesSection from '@/components/production/CategoryManagement.vue'
 import ProductsSection from '@/components/production/ProductManagement.vue'
+import RawMaterialsSection from '@/components/production/RawMaterialManagement.vue'
+
 
 export default {
   name: 'ProductionDashboardView',
@@ -61,11 +71,13 @@ export default {
     ProductionSidebar,
     ProductionHeader,
     CategoriesSection,
-    ProductsSection
+    ProductsSection ,
+    RawMaterialsSection,
   },
   setup() {
     const activeSection = ref('categories')
     const error = ref(null)
+    const rawMaterials = ref([])
     
     // Utiliser les composables
     const { 
@@ -174,10 +186,45 @@ export default {
       }
     }
 
+    // Gestionnaires pour les matières premières
+    const handleAddRawMaterial = async (rawMaterialData) => {
+      try {
+        error.value = null
+        // Logique d'ajout à implémenter côté backend
+        console.log('Matière première créée:', rawMaterialData)
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la création de la matière première:', err)
+      }
+    }
+
+    const handleEditRawMaterial = async (rawMaterialData) => {
+      try {
+        error.value = null
+        // Logique de modification à implémenter côté backend
+        console.log('Matière première modifiée:', rawMaterialData)
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la modification de la matière première:', err)
+      }
+    }
+
+    const handleDeleteRawMaterial = async (rawMaterialId) => {
+      try {
+        error.value = null
+        // Logique de suppression à implémenter côté backend
+        console.log('Matière première supprimée:', rawMaterialId)
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la suppression de la matière première:', err)
+      }
+    }
+
     return {
       activeSection,
       categories,
       products,
+      rawMaterials,
       isLoading,
       error,
       handleSectionChange,
@@ -186,7 +233,10 @@ export default {
       handleDeleteCategory,
       handleAddProduct,
       handleEditProduct,
-      handleDeleteProduct
+      handleDeleteProduct,
+       handleAddRawMaterial,
+      handleEditRawMaterial,
+      handleDeleteRawMaterial
     }
   }
 }

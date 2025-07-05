@@ -47,8 +47,9 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useCategories } from '@/composables/useCategories'
+import { useProducts } from '@/composables/useProducts'
 import ProductionSidebar from '@/components/production/ProdSidebar.vue'
 import ProductionHeader from '@/components/production/ProdHeader.vue'
 import CategoriesSection from '@/components/production/CategoryManagement.vue'
@@ -66,23 +67,35 @@ export default {
     const activeSection = ref('categories')
     const error = ref(null)
     
-    // Utiliser le composable des catégories
+    // Utiliser les composables
     const { 
       categories, 
-      isLoading, 
+      isLoading: categoriesLoading, 
       loadCategories, 
       createCategory, 
       updateCategory, 
       deleteCategory 
     } = useCategories()
     
-    // Données temporaires pour les produits (à remplacer par un composable similaire)
-    const products = ref([])
+    const {
+      products,
+      isLoading: productsLoading,
+      loadProducts,
+      createProduct,
+      updateProduct,
+      deleteProduct
+    } = useProducts()
 
-    // Charger les catégories au montage du composant
+    // État de chargement global
+    const isLoading = computed(() => categoriesLoading.value || productsLoading.value)
+
+    // Charger les données au montage du composant
     onMounted(async () => {
       try {
+        // Charger les catégories en premier (nécessaires pour les produits)
         await loadCategories()
+        // Charger les produits
+        await loadProducts()
       } catch (err) {
         error.value = err.message
       }
@@ -93,11 +106,11 @@ export default {
       error.value = null
     }
 
+    // Gestionnaires pour les catégories
     const handleAddCategory = async (categoryData) => {
       try {
         error.value = null
         await createCategory(categoryData)
-        // Optionnel: afficher un message de succès
         console.log('Catégorie créée avec succès')
       } catch (err) {
         error.value = err.message
@@ -109,7 +122,6 @@ export default {
       try {
         error.value = null
         await updateCategory(categoryData)
-        // Optionnel: afficher un message de succès
         console.log('Catégorie modifiée avec succès')
       } catch (err) {
         error.value = err.message
@@ -121,7 +133,6 @@ export default {
       try {
         error.value = null
         await deleteCategory(categoryId)
-        // Optionnel: afficher un message de succès
         console.log('Catégorie supprimée avec succès')
       } catch (err) {
         error.value = err.message
@@ -129,19 +140,38 @@ export default {
       }
     }
 
-    const handleAddProduct = (product) => {
-      // Logique d'ajout de produit (à implémenter)
-      console.log('Ajouter produit:', product)
+    // Gestionnaires pour les produits
+    const handleAddProduct = async (productData) => {
+      try {
+        error.value = null
+        await createProduct(productData)
+        console.log('Produit créé avec succès')
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la création du produit:', err)
+      }
     }
 
-    const handleEditProduct = (product) => {
-      // Logique de modification de produit (à implémenter)
-      console.log('Modifier produit:', product)
+    const handleEditProduct = async (productData) => {
+      try {
+        error.value = null
+        await updateProduct(productData)
+        console.log('Produit modifié avec succès')
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la modification du produit:', err)
+      }
     }
 
-    const handleDeleteProduct = (productId) => {
-      // Logique de suppression de produit (à implémenter)
-      console.log('Supprimer produit:', productId)
+    const handleDeleteProduct = async (productId) => {
+      try {
+        error.value = null
+        await deleteProduct(productId)
+        console.log('Produit supprimé avec succès')
+      } catch (err) {
+        error.value = err.message
+        console.error('Erreur lors de la suppression du produit:', err)
+      }
     }
 
     return {

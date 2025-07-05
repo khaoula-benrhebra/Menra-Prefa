@@ -46,13 +46,19 @@
         >
           <!-- Image du produit -->
           <div class="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-            <div class="absolute inset-0 flex items-center justify-center">
+            <img 
+              v-if="product.image" 
+              :src="product.image" 
+              :alt="product.name"
+              class="w-full h-full object-cover"
+            />
+            <div v-else class="absolute inset-0 flex items-center justify-center">
               <div class="text-6xl text-gray-400">
                 <!-- Icône basée sur la catégorie -->
-                <svg v-if="product.category === 'Pavage'" class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                <svg v-if="product.category_name?.toLowerCase().includes('pavage')" class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
                 </svg>
-                <svg v-else-if="product.category === 'Structure'" class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                <svg v-else-if="product.category_name?.toLowerCase().includes('structure')" class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
                 </svg>
                 <svg v-else class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
@@ -63,7 +69,7 @@
             <!-- Badge catégorie -->
             <div class="absolute top-3 left-3">
               <span class="px-2 py-1 bg-menara-red text-white rounded-full text-xs font-medium">
-                {{ product.category }}
+                {{ product.category_name }}
               </span>
             </div>
           </div>
@@ -80,19 +86,15 @@
             <!-- Prix -->
             <div class="flex justify-between items-center mb-4">
               <div>
-                <span class="text-2xl font-bold text-menara-red">{{ product.price }}€</span>
-                
+                <span class="text-2xl font-bold text-menara-red">{{ formatPrice(product.price) }}€</span>
               </div>
             </div>
 
             <!-- Actions -->
             <div class="flex space-x-2">
-              <button class="flex-1 bg-menara-red hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+              <button class="flex-1 py-2 px-4 rounded-lg font-medium transition-colors bg-menara-red hover:bg-red-700 text-white">
                 Commander
               </button>
-              <!-- <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:border-menara-red hover:text-menara-red transition-colors">
-                Détails
-              </button> -->
             </div>
           </div>
         </div>
@@ -107,9 +109,15 @@
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-6">
-              <!-- Icône produit -->
-              <div class="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center">
-                <svg class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <!-- Image produit -->
+              <div class="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                <img 
+                  v-if="product.image" 
+                  :src="product.image" 
+                  :alt="product.name"
+                  class="w-full h-full object-cover"
+                />
+                <svg v-else class="w-8 h-8 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd" />
                 </svg>
               </div>
@@ -119,27 +127,22 @@
                 <div class="flex items-center space-x-3 mb-2">
                   <h3 class="text-lg font-semibold text-menara-dark">{{ product.name }}</h3>
                   <span class="px-2 py-1 bg-menara-red text-white rounded-full text-xs font-medium">
-                    {{ product.category }}
+                    {{ product.category_name }}
                   </span>
                 </div>
                 <p class="text-gray-600 mb-2">{{ product.description }}</p>
-                <div class="flex flex-wrap gap-2">
-                </div>
               </div>
             </div>
 
             <!-- Prix et actions -->
             <div class="text-right">
               <div class="mb-2">
-                <span class="text-2xl font-bold text-menara-red">{{ product.price }}€</span>
+                <span class="text-2xl font-bold text-menara-red">{{ formatPrice(product.price) }}€</span>
               </div>
               <div class="flex space-x-2">
-                <button class="bg-menara-red hover:bg-red-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                <button class="py-2 px-4 rounded-lg font-medium transition-colors bg-menara-red hover:bg-red-700 text-white">
                   Commander
                 </button>
-                <!-- <button class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:border-menara-red hover:text-menara-red transition-colors">
-                  Détails
-                </button> -->
               </div>
             </div>
           </div>
@@ -172,8 +175,16 @@ export default {
   setup() {
     const viewMode = ref('grid')
 
+    const formatPrice = (price) => {
+      return new Intl.NumberFormat('fr-FR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(price)
+    }
+
     return {
-      viewMode
+      viewMode,
+      formatPrice
     }
   }
 }

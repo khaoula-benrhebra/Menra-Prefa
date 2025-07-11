@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\RawMaterialController;
 
 // Route utilisateur de base
 Route::get('/user', function (Request $request) {
@@ -31,7 +32,6 @@ Route::get('/public/categories/{id}', [CategoryController::class, 'show']);
 Route::get('/public/products', [ProductController::class, 'index']);
 Route::get('/public/products/{id}', [ProductController::class, 'show']);
 
-
 // Routes protégées par Sanctum
 Route::middleware(['auth:sanctum', 'auth.gates'])->group(function () {
     Route::prefix('auth')->group(function () {
@@ -47,11 +47,9 @@ Route::middleware(['auth:sanctum', 'auth.gates'])->group(function () {
     
     // Routes pour la gestion des catégories
     Route::prefix('categories')->group(function () {
-        // Routes publiques (lecture) - accessibles à tous les utilisateurs connectés
         Route::get('/', [CategoryController::class, 'index']);
         Route::get('/{id}', [CategoryController::class, 'show']);
         
-        // Routes protégées (écriture) - réservées au Responsable production
         Route::middleware('role:Responsable production')->group(function () {
             Route::post('/', [CategoryController::class, 'store']);
             Route::put('/{id}', [CategoryController::class, 'update']);
@@ -64,7 +62,6 @@ Route::middleware(['auth:sanctum', 'auth.gates'])->group(function () {
         Route::get('/', [ProductController::class, 'index']);
         Route::get('/{id}', [ProductController::class, 'show']);
         
-        // Routes protégées (écriture) - réservées au Responsable production
         Route::middleware('role:Responsable production')->group(function () {
             Route::post('/', [ProductController::class, 'store']);
             Route::put('/{id}', [ProductController::class, 'update']);
@@ -72,6 +69,18 @@ Route::middleware(['auth:sanctum', 'auth.gates'])->group(function () {
         });
     });
     
+    // Routes pour la gestion des matières premières
+    Route::prefix('raw-materials')->group(function () {
+        Route::get('/', [RawMaterialController::class, 'index']);
+        Route::get('/{id}', [RawMaterialController::class, 'show']);
+        
+        Route::middleware('role:Responsable production')->group(function () {
+            Route::post('/', [RawMaterialController::class, 'store']);
+            Route::put('/{id}', [RawMaterialController::class, 'update']);
+            Route::delete('/{id}', [RawMaterialController::class, 'destroy']);
+        });
+    });
+
     // Routes protégées par rôle Client
     Route::middleware('role:Client')->group(function () {
         // Routes réservées aux clients

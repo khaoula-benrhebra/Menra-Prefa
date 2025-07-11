@@ -18,6 +18,9 @@ class PermissionsTableSeeder extends Seeder
             'create_product'=>'créer un produit',
             'update_product'=>'Modidfier un produit',
             'delete_product'=>'Supprimer un produit',   
+            'create_rawMaterial'=>'créer une matière première',   
+            'update_rawMaterial'=>'modifier une matière première',   
+            'delete_rawMaterial'=>'Supprimer une matière première',   
             
         ];
         
@@ -52,6 +55,9 @@ class PermissionsTableSeeder extends Seeder
             $permissionIds['create_product'],
             $permissionIds['update_product'],
             $permissionIds['delete_product'],
+            $permissionIds['create_rawMaterial'],
+            $permissionIds['update_rawMaterial'],
+            $permissionIds['delete_rawMaterial'],
             
         ];
         $responProdRole->permissions()->attach($responProdPermissions);

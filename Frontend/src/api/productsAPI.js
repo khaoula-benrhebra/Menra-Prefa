@@ -56,6 +56,14 @@ export const productsAPI = {
     formData.append('stock_min', productData.stock_min)
     formData.append('category_id', productData.category_id)
     
+    // Correction: utiliser rawMaterials au lieu de raw_materials
+    if (productData.rawMaterials && productData.rawMaterials.length > 0) {
+      productData.rawMaterials.forEach((rawMaterial, index) => {
+        formData.append(`raw_materials[${index}][id]`, rawMaterial.id)
+        formData.append(`raw_materials[${index}][quantite_par_unite]`, rawMaterial.quantite_par_unite)
+      })
+    }
+    
     if (productData.imageFile) {
       formData.append('image', productData.imageFile)
     }
@@ -77,7 +85,6 @@ export const productsAPI = {
   },
 
   async update(id, productData, token) {
-    // Créer un FormData pour gérer l'upload d'image
     const formData = new FormData()
     formData.append('nom', productData.name)
     formData.append('description', productData.description || '')
@@ -85,15 +92,22 @@ export const productsAPI = {
     formData.append('stock_actuel', productData.stock_actuel)
     formData.append('stock_min', productData.stock_min)
     formData.append('category_id', productData.category_id)
-    formData.append('_method', 'PUT') // Pour Laravel
+    formData.append('_method', 'PUT')
     
-    // Ajouter l'image seulement si une nouvelle image est sélectionnée
+    // Correction: utiliser rawMaterials au lieu de raw_materials
+    if (productData.rawMaterials && productData.rawMaterials.length > 0) {
+      productData.rawMaterials.forEach((rawMaterial, index) => {
+        formData.append(`raw_materials[${index}][id]`, rawMaterial.id)
+        formData.append(`raw_materials[${index}][quantite_par_unite]`, rawMaterial.quantite_par_unite)
+      })
+    }
+    
     if (productData.imageFile) {
       formData.append('image', productData.imageFile)
     }
     
     const response = await fetch(productEndpoints.update(id), {
-      method: 'POST', // Utiliser POST avec _method=PUT pour FormData
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
       },

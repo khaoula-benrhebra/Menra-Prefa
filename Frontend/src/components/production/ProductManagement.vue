@@ -82,7 +82,7 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {{ product.category_name }}
+                {{ product.category_name || 'Sans catégorie' }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -130,7 +130,7 @@
 
     <!-- Add/Edit Modal -->
     <div v-if="showModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+      <div class="relative top-10 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
         <div class="mt-3">
           <h3 class="text-lg font-medium text-gray-900 mb-4">
             {{ isEditing ? 'Modifier le produit' : 'Nouveau produit' }}
@@ -140,7 +140,6 @@
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Image du produit</label>
               <div class="flex items-center space-x-4">
-                <!-- Image Preview -->
                 <div class="flex-shrink-0">
                   <div v-if="imagePreview" class="h-20 w-20 rounded-lg overflow-hidden border border-gray-300">
                     <img :src="imagePreview" alt="Aperçu" class="h-full w-full object-cover">
@@ -152,7 +151,6 @@
                   </div>
                 </div>
                 
-                <!-- Upload Button -->
                 <div class="flex-1">
                   <input
                     type="file"
@@ -255,6 +253,70 @@
               ></textarea>
             </div>
 
+            <!-- Raw Materials Section -->
+            <div>
+              <div class="flex justify-between items-center mb-4">
+                <label class="block text-sm font-medium text-gray-700">Matières Premières *</label>
+                <button
+                  type="button"
+                  @click="addRawMaterial"
+                  class="text-sm text-menara-red hover:text-red-700 flex items-center"
+                >
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                  </svg>
+                  Ajouter une matière première
+                </button>
+              </div>
+              
+              <div v-if="formData.rawMaterials.length === 0" class="text-sm text-gray-500 text-center py-4 border-2 border-dashed border-gray-300 rounded-md">
+                Aucune matière première ajoutée. Vous devez ajouter au moins une matière première.
+              </div>
+              
+              <div v-else class="space-y-3">
+                <div v-for="(rawMaterial, index) in formData.rawMaterials" :key="index" class="flex items-center space-x-3 p-3 border border-gray-200 rounded-md bg-gray-50">
+                  <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Matière première</label>
+                    <select
+                      v-model="rawMaterial.id"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-menara-red"
+                    >
+                      <option value="">Sélectionner une matière première</option>
+                      <option v-for="material in rawMaterials" :key="material.id" :value="material.id">
+                        {{ material.name || material.nom }} - {{ formatRawMaterialPrice(material) }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="w-32">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Quantité</label>
+                    <input
+                      type="number"
+                      v-model="rawMaterial.quantite_par_unite"
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-menara-red"
+                    />
+                  </div>
+                  <div class="flex flex-col items-center">
+                    <label class="block text-xs font-medium text-gray-500 mb-1">Action</label>
+                    <button
+                      type="button"
+                      @click="removeRawMaterial(index)"
+                      class="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50"
+                      title="Supprimer cette matière première"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Action Buttons -->
             <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
               <button
@@ -268,7 +330,7 @@
               <button
                 type="submit"
                 class="px-4 py-2 text-sm font-medium text-white bg-menara-red rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
-                :disabled="isSubmitting"
+                :disabled="isSubmitting || formData.rawMaterials.length === 0"
               >
                 {{ isSubmitting ? 'En cours...' : (isEditing ? 'Modifier' : 'Créer') }}
               </button>
@@ -326,6 +388,10 @@ export default {
     categories: {
       type: Array,
       default: () => []
+    },
+    rawMaterials: {
+      type: Array,
+      default: () => []
     }
   },
   emits: ['add-product', 'edit-product', 'delete-product'],
@@ -349,7 +415,7 @@ export default {
       price: 0,
       stock_actuel: 0,
       stock_min: 1,
-      image: null
+      rawMaterials: []
     })
 
     const filteredProducts = computed(() => {
@@ -358,7 +424,7 @@ export default {
       if (searchQuery.value) {
         filtered = filtered.filter(product =>
           product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-          product.description.toLowerCase().includes(searchQuery.value.toLowerCase())
+          (product.description && product.description.toLowerCase().includes(searchQuery.value.toLowerCase()))
         )
       }
 
@@ -376,16 +442,34 @@ export default {
       }).format(price)
     }
 
+    // Nouvelle fonction pour formater le prix des matières premières
+    const formatRawMaterialPrice = (material) => {
+      const price = material.prix_unitaire || material.price || 0
+      return new Intl.NumberFormat('fr-MA', {
+        style: 'currency',
+        currency: 'MAD'
+      }).format(price)
+    }
+
+    const addRawMaterial = () => {
+      formData.value.rawMaterials.push({
+        id: '',
+        quantite_par_unite: 0
+      })
+    }
+
+    const removeRawMaterial = (index) => {
+      formData.value.rawMaterials.splice(index, 1)
+    }
+
     const handleImageUpload = (event) => {
       const file = event.target.files[0]
       if (file) {
-        // Vérification la taille du fichier (5MB max)
         if (file.size > 5 * 1024 * 1024) {
           alert('La taille de l\'image ne doit pas dépasser 5MB')
           return
         }
 
-        // Vérification le type de fichier
         if (!file.type.startsWith('image/')) {
           alert('Veuillez sélectionner un fichier image valide')
           return
@@ -393,7 +477,6 @@ export default {
 
         selectedImageFile.value = file
         
-        // Créer l'aperçu
         const reader = new FileReader()
         reader.onload = (e) => {
           imagePreview.value = e.target.result
@@ -417,7 +500,7 @@ export default {
         price: 0,
         stock_actuel: 0,
         stock_min: 1,
-        image: null
+        rawMaterials: []
       }
       resetImageUpload()
       showModal.value = true
@@ -425,9 +508,22 @@ export default {
 
     const openEditModal = (product) => {
       isEditing.value = true
-      formData.value = { ...product }
       
-      // Charger l'image existante si elle existe
+      // Mapper les données du produit pour le formulaire
+      formData.value = {
+        id: product.id,
+        name: product.name,
+        category_id: product.category_id,
+        description: product.description || '',
+        price: product.price,
+        stock_actuel: product.stock_actuel,
+        stock_min: product.stock_min,
+        rawMaterials: (product.rawMaterials || []).map(rm => ({
+          id: rm.id,
+          quantite_par_unite: rm.quantite_par_unite
+        }))
+      }
+      
       if (product.image) {
         imagePreview.value = product.image
       } else {
@@ -447,7 +543,7 @@ export default {
         price: 0,
         stock_actuel: 0,
         stock_min: 1,
-        image: null
+        rawMaterials: []
       }
       resetImageUpload()
       isSubmitting.value = false
@@ -468,7 +564,7 @@ export default {
       try {
         isSubmitting.value = true
         
-        // Préparer les données du formulaire
+        // Préparer les données pour l'API
         const productData = {
           ...formData.value,
           imageFile: selectedImageFile.value
@@ -515,6 +611,9 @@ export default {
       imagePreview,
       filteredProducts,
       formatPrice,
+      formatRawMaterialPrice, 
+      addRawMaterial,
+      removeRawMaterial,
       handleImageUpload,
       openAddModal,
       openEditModal,
@@ -535,5 +634,9 @@ export default {
 
 .focus\:ring-menara-red:focus {
   --tw-ring-color: rgb(192, 15, 26);
+}
+
+.text-menara-red {
+  color: rgb(192, 15, 26);
 }
 </style>

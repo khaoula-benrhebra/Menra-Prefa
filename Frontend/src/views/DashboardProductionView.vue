@@ -23,6 +23,11 @@
           <div class="text-red-800">{{ error }}</div>
         </div>
         
+        <!-- Success Message -->
+        <div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+          <div class="text-green-800">{{ successMessage }}</div>
+        </div>
+        
         <!-- Categories Section -->
         <CategoriesSection 
           v-else-if="activeSection === 'categories'"
@@ -37,11 +42,13 @@
           v-else-if="activeSection === 'products'"
           :products="products"
           :categories="categories"
+          :raw-materials="rawMaterials"
           @add-product="handleAddProduct"
           @edit-product="handleEditProduct"
           @delete-product="handleDeleteProduct"
         />
 
+        <!-- Raw Materials Section -->
         <RawMaterialsSection 
           v-else-if="activeSection === 'raw-materials'"
           :raw-materials="rawMaterials"
@@ -58,12 +65,12 @@
 import { ref, onMounted, computed } from 'vue'
 import { useCategories } from '@/composables/useCategories'
 import { useProducts } from '@/composables/useProducts'
+import { useRawMaterials } from '@/composables/useRawMaterials'
 import ProductionSidebar from '@/components/production/ProdSidebar.vue'
 import ProductionHeader from '@/components/production/ProdHeader.vue'
 import CategoriesSection from '@/components/production/CategoryManagement.vue'
 import ProductsSection from '@/components/production/ProductManagement.vue'
 import RawMaterialsSection from '@/components/production/RawMaterialManagement.vue'
-
 
 export default {
   name: 'ProductionDashboardView',
@@ -71,13 +78,13 @@ export default {
     ProductionSidebar,
     ProductionHeader,
     CategoriesSection,
-    ProductsSection ,
+    ProductsSection,
     RawMaterialsSection,
   },
   setup() {
     const activeSection = ref('categories')
     const error = ref(null)
-    const rawMaterials = ref([])
+    const successMessage = ref(null)
     
     // Utiliser les composables
     const { 
@@ -98,24 +105,50 @@ export default {
       deleteProduct
     } = useProducts()
 
+    const {
+      rawMaterials,
+      isLoading: rawMaterialsLoading,
+      loadRawMaterials,
+      createRawMaterial,
+      updateRawMaterial,
+      deleteRawMaterial
+    } = useRawMaterials()
+
     // État de chargement global
-    const isLoading = computed(() => categoriesLoading.value || productsLoading.value)
+    const isLoading = computed(() => 
+      categoriesLoading.value || productsLoading.value || rawMaterialsLoading.value
+    )
+
+    // Fonction pour afficher un message de succès temporaire
+    const showSuccessMessage = (message) => {
+      successMessage.value = message
+      setTimeout(() => {
+        successMessage.value = null
+      }, 3000)
+    }
 
     // Charger les données au montage du composant
     onMounted(async () => {
       try {
-        // Charger les catégories en premier (nécessaires pour les produits)
+        // Charger les matières premières en premier
+        await loadRawMaterials()
+        // Charger les catégories
         await loadCategories()
         // Charger les produits
         await loadProducts()
+        
+        // Debug: Vérifier si les matières premières sont chargées
+        console.log('Raw materials loaded:', rawMaterials.value)
       } catch (err) {
         error.value = err.message
+        console.error('Erreur lors du chargement des données:', err)
       }
     })
 
     const handleSectionChange = (section) => {
       activeSection.value = section
       error.value = null
+      successMessage.value = null
     }
 
     // Gestionnaires pour les catégories
@@ -123,7 +156,7 @@ export default {
       try {
         error.value = null
         await createCategory(categoryData)
-        console.log('Catégorie créée avec succès')
+        showSuccessMessage('Catégorie créée avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la création:', err)
@@ -134,7 +167,7 @@ export default {
       try {
         error.value = null
         await updateCategory(categoryData)
-        console.log('Catégorie modifiée avec succès')
+        showSuccessMessage('Catégorie modifiée avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la modification:', err)
@@ -145,7 +178,7 @@ export default {
       try {
         error.value = null
         await deleteCategory(categoryId)
-        console.log('Catégorie supprimée avec succès')
+        showSuccessMessage('Catégorie supprimée avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la suppression:', err)
@@ -157,7 +190,7 @@ export default {
       try {
         error.value = null
         await createProduct(productData)
-        console.log('Produit créé avec succès')
+        showSuccessMessage('Produit créé avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la création du produit:', err)
@@ -168,7 +201,7 @@ export default {
       try {
         error.value = null
         await updateProduct(productData)
-        console.log('Produit modifié avec succès')
+        showSuccessMessage('Produit modifié avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la modification du produit:', err)
@@ -179,7 +212,7 @@ export default {
       try {
         error.value = null
         await deleteProduct(productId)
-        console.log('Produit supprimé avec succès')
+        showSuccessMessage('Produit supprimé avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la suppression du produit:', err)
@@ -190,8 +223,8 @@ export default {
     const handleAddRawMaterial = async (rawMaterialData) => {
       try {
         error.value = null
-        // Logique d'ajout à implémenter côté backend
-        console.log('Matière première créée:', rawMaterialData)
+        await createRawMaterial(rawMaterialData)
+        showSuccessMessage('Matière première créée avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la création de la matière première:', err)
@@ -201,8 +234,8 @@ export default {
     const handleEditRawMaterial = async (rawMaterialData) => {
       try {
         error.value = null
-        // Logique de modification à implémenter côté backend
-        console.log('Matière première modifiée:', rawMaterialData)
+        await updateRawMaterial(rawMaterialData)
+        showSuccessMessage('Matière première modifiée avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la modification de la matière première:', err)
@@ -212,8 +245,8 @@ export default {
     const handleDeleteRawMaterial = async (rawMaterialId) => {
       try {
         error.value = null
-        // Logique de suppression à implémenter côté backend
-        console.log('Matière première supprimée:', rawMaterialId)
+        await deleteRawMaterial(rawMaterialId)
+        showSuccessMessage('Matière première supprimée avec succès')
       } catch (err) {
         error.value = err.message
         console.error('Erreur lors de la suppression de la matière première:', err)
@@ -227,6 +260,7 @@ export default {
       rawMaterials,
       isLoading,
       error,
+      successMessage,
       handleSectionChange,
       handleAddCategory,
       handleEditCategory,
@@ -234,7 +268,7 @@ export default {
       handleAddProduct,
       handleEditProduct,
       handleDeleteProduct,
-       handleAddRawMaterial,
+      handleAddRawMaterial,
       handleEditRawMaterial,
       handleDeleteRawMaterial
     }

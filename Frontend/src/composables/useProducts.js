@@ -28,6 +28,13 @@ export function useProducts() {
         category_id: product.category?.id,
         category_name: product.category?.nom || 'Aucune catégorie',
         image: product.image,
+        // Correction: mapper correctement les matières premières
+        rawMaterials: product.raw_materials ? product.raw_materials.map(rm => ({
+          id: rm.id,
+          name: rm.nom,
+          prix_unitaire: rm.prix_unitaire,
+          quantite_par_unite: rm.quantite_par_unite
+        })) : [],
         created_at: product.created_at,
         updated_at: product.updated_at
       }))
@@ -37,7 +44,6 @@ export function useProducts() {
 
       if (!token.value) {
         console.warn('Tentative de chargement des produits sans authentification')
-        // On garde un tableau vide mais on ne throw pas l'erreur
         products.value = []
         return products.value
       }
@@ -56,7 +62,6 @@ export function useProducts() {
     try {
       isLoading.value = true
       const response = await productsAPI.create(productData, token.value)
-      console.log( 'test' , response) ;
       
       // Ajouter le nouveau produit à la liste locale
       const newProduct = {
@@ -69,6 +74,13 @@ export function useProducts() {
         category_id: response.product.category?.id,
         category_name: response.product.category?.nom || 'Aucune catégorie',
         image: response.product.image,
+        // Correction: mapper correctement les matières premières
+        rawMaterials: response.product.raw_materials ? response.product.raw_materials.map(rm => ({
+          id: rm.id,
+          name: rm.nom,
+          prix_unitaire: rm.prix_unitaire,
+          quantite_par_unite: rm.quantite_par_unite
+        })) : [],
         created_at: response.product.created_at || new Date().toISOString(),
         updated_at: response.product.updated_at || new Date().toISOString()
       }
@@ -105,6 +117,13 @@ export function useProducts() {
           category_id: response.product.category?.id,
           category_name: response.product.category?.nom || 'Aucune catégorie',
           image: response.product.image,
+          // Correction: mapper correctement les matières premières
+          rawMaterials: response.product.raw_materials ? response.product.raw_materials.map(rm => ({
+            id: rm.id,
+            name: rm.nom,
+            prix_unitaire: rm.prix_unitaire,
+            quantite_par_unite: rm.quantite_par_unite
+          })) : [],
           created_at: products.value[index].created_at,
           updated_at: response.product.updated_at || new Date().toISOString()
         }

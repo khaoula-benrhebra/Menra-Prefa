@@ -14,7 +14,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::with(['category', 'media'])->get();
+        $products = Product::with(['category', 'media', 'rawMaterials'])->get();
 
         $products = $products->map(function ($product) {
             return [
@@ -25,6 +25,14 @@ class ProductController extends Controller
                 'stock_min' => $product->stock_min,
                 'stock_actuel' => $product->stock_actuel,
                 'category' => $product->category,
+                'raw_materials' => $product->rawMaterials->map(function ($rawMaterial) {
+                    return [
+                        'id' => $rawMaterial->id,
+                        'nom' => $rawMaterial->nom,
+                        'prix_unitaire' => $rawMaterial->prix_unitaire,
+                        'quantite_par_unite' => $rawMaterial->pivot->quantite_par_unite
+                    ];
+                }),
                 'image' => $product->getFirstMediaUrl('products') 
                     ? url($product->getFirstMediaUrl('products')) 
                     : null,
@@ -44,7 +52,7 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        $product = Product::with(['category', 'media'])->find($id);
+        $product = Product::with(['category', 'media', 'rawMaterials'])->find($id);
 
         if (!$product) {
             return response()->json([
@@ -62,6 +70,14 @@ class ProductController extends Controller
                 'stock_min' => $product->stock_min,
                 'stock_actuel' => $product->stock_actuel,
                 'category' => $product->category,
+                'raw_materials' => $product->rawMaterials->map(function ($rawMaterial) {
+                    return [
+                        'id' => $rawMaterial->id,
+                        'nom' => $rawMaterial->nom,
+                        'prix_unitaire' => $rawMaterial->prix_unitaire,
+                        'quantite_par_unite' => $rawMaterial->pivot->quantite_par_unite
+                    ];
+                }),
                 'image' => $product->getFirstMediaUrl('products') 
                     ? url($product->getFirstMediaUrl('products')) 
                     : null,
@@ -86,6 +102,9 @@ class ProductController extends Controller
             'stock_actuel' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'raw_materials' => 'required|array|min:1',
+            'raw_materials.*.id' => 'required|exists:raw_materials,id',
+            'raw_materials.*.quantite_par_unite' => 'required|numeric|min:0.01',
         ]);
 
         $product = Product::create([
@@ -97,14 +116,20 @@ class ProductController extends Controller
             'category_id' => $request->category_id,
         ]);
 
+        // Attacher les matières premières avec leurs quantités
+        foreach ($request->raw_materials as $rawMaterial) {
+            $product->rawMaterials()->attach($rawMaterial['id'], [
+                'quantite_par_unite' => $rawMaterial['quantite_par_unite']
+            ]);
+        }
+
         if ($request->hasFile('image')) {
-            // Ajouter l'image à la collection avec un nom spécifique
             $product->addMediaFromRequest('image')
                 ->usingName($request->nom)
                 ->toMediaCollection('products');
         }
 
-        $product->load(['category', 'media']);
+        $product->load(['category', 'media', 'rawMaterials']);
 
         return response()->json([
             'message' => 'Produit créé avec succès',
@@ -116,6 +141,14 @@ class ProductController extends Controller
                 'stock_min' => $product->stock_min,
                 'stock_actuel' => $product->stock_actuel,
                 'category' => $product->category,
+                'raw_materials' => $product->rawMaterials->map(function ($rawMaterial) {
+                    return [
+                        'id' => $rawMaterial->id,
+                        'nom' => $rawMaterial->nom,
+                        'prix_unitaire' => $rawMaterial->prix_unitaire,
+                        'quantite_par_unite' => $rawMaterial->pivot->quantite_par_unite
+                    ];
+                }),
                 'image' => $product->getFirstMediaUrl('products') 
                     ? url($product->getFirstMediaUrl('products')) 
                     : null,
@@ -145,7 +178,10 @@ class ProductController extends Controller
             'stock_min' => 'required|integer|min:0',
             'stock_actuel' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120', 
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:5120',
+            'raw_materials' => 'required|array|min:1',
+            'raw_materials.*.id' => 'required|exists:raw_materials,id',
+            'raw_materials.*.quantite_par_unite' => 'required|numeric|min:0.01',
         ]);
 
         $product->update([
@@ -157,6 +193,16 @@ class ProductController extends Controller
             'category_id' => $request->category_id,
         ]);
 
+        // Détacher toutes les matières premières existantes
+        $product->rawMaterials()->detach();
+
+        // Attacher les nouvelles matières premières avec leurs quantités
+        foreach ($request->raw_materials as $rawMaterial) {
+            $product->rawMaterials()->attach($rawMaterial['id'], [
+                'quantite_par_unite' => $rawMaterial['quantite_par_unite']
+            ]);
+        }
+
         if ($request->hasFile('image')) {
             $product->clearMediaCollection('products');
             $product->addMediaFromRequest('image')
@@ -164,7 +210,7 @@ class ProductController extends Controller
                 ->toMediaCollection('products');
         }
 
-        $product->load(['category', 'media']);
+        $product->load(['category', 'media', 'rawMaterials']);
 
         return response()->json([
             'message' => 'Produit modifié avec succès',
@@ -176,6 +222,14 @@ class ProductController extends Controller
                 'stock_min' => $product->stock_min,
                 'stock_actuel' => $product->stock_actuel,
                 'category' => $product->category,
+                'raw_materials' => $product->rawMaterials->map(function ($rawMaterial) {
+                    return [
+                        'id' => $rawMaterial->id,
+                        'nom' => $rawMaterial->nom,
+                        'prix_unitaire' => $rawMaterial->prix_unitaire,
+                        'quantite_par_unite' => $rawMaterial->pivot->quantite_par_unite
+                    ];
+                }),
                 'image' => $product->getFirstMediaUrl('products') 
                     ? url($product->getFirstMediaUrl('products')) 
                     : null,
@@ -198,6 +252,9 @@ class ProductController extends Controller
             ], 404);
         }
 
+        // Détacher les matières premières avant suppression
+        $product->rawMaterials()->detach();
+        
         // Supprimer les médias associés avant de supprimer le produit
         $product->clearMediaCollection('products');
         $product->delete();

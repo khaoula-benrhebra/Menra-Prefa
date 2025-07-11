@@ -30,6 +30,13 @@ class Product extends Model implements HasMedia
         return $this->belongsTo(Category::class);
     }
 
+     public function rawMaterials()
+    {
+        return $this->belongsToMany(RawMaterial::class, 'product_raw_material')
+                    ->withPivot('quantite_par_unite')
+                    ->withTimestamps();
+    }
+
     /**
      * Définir les collections de médias
      */

@@ -1,16 +1,21 @@
 <template>
   <div class="bg-white rounded-xl shadow-lg p-6">
     <div class="flex items-center justify-between mb-6">
-      <h2 class="text-xl font-bold text-gray-800">Suivi des Commandes</h2>
+      <h2 class="text-xl font-bold text-gray-800">{{ title }}</h2>
       <div class="flex space-x-2">
-        <select class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <select 
+          v-model="selectedStatusFilter"
+          class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        >
           <option value="">Tous les statuts</option>
-          <option value="en_attente">En attente</option>
-          <option value="en_production">En production</option>
-          <option value="terminee">Terminée</option>
-          <option value="livree">Livrée</option>
+          <option v-for="status in allowedStatuses" :key="status" :value="status">
+            {{ getStatusText(status) }}
+          </option>
         </select>
-        <button class="p-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
+        <button 
+          @click="refreshOrders"
+          class="p-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
@@ -18,8 +23,21 @@
       </div>
     </div>
 
+    <!-- Message si aucune commande -->
+    <div v-if="displayedOrders.length === 0" class="text-center py-12">
+      <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune commande trouvée</h3>
+      <p class="text-gray-500">
+        {{ title === 'Historique des Commandes' ? 
+          'Vous n\'avez encore aucune commande livrée.' : 
+          'Vous n\'avez aucune commande en cours.' }}
+      </p>
+    </div>
+
     <!-- Tableau des commandes -->
-    <div class="overflow-x-auto">
+    <div v-else class="overflow-x-auto">
       <table class="w-full">
         <thead>
           <tr class="border-b border-gray-200">
@@ -33,7 +51,7 @@
         </thead>
         <tbody class="divide-y divide-gray-100">
           <tr 
-            v-for="order in orders" 
+            v-for="order in displayedOrders" 
             :key="order.id"
             class="hover:bg-gray-50 transition-colors"
           >
@@ -68,6 +86,7 @@
                 <button 
                   class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
                   @click="viewOrder(order.id)"
+                  title="Voir les détails"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -77,6 +96,7 @@
                 <button 
                   class="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded"
                   @click="downloadOrder(order.id)"
+                  title="Télécharger"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -90,9 +110,9 @@
     </div>
 
     <!-- Pagination -->
-    <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+    <div v-if="displayedOrders.length > 0" class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
       <div class="text-sm text-gray-600">
-        Affichage de 1 à {{ orders.length }} sur {{ orders.length }} commandes
+        Affichage de {{ displayedOrders.length }} commande(s)
       </div>
       <div class="flex space-x-2">
         <button class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50" disabled>
@@ -101,16 +121,13 @@
         <button class="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700">
           1
         </button>
-        <button class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
-          2
-        </button>
-        <button class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
+        <button class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50" disabled>
           Suivant
         </button>
       </div>
     </div>
 
-    <!-- Modal de détail (affiché conditionellement) -->
+    <!-- Modal de détail -->
     <div v-if="showOrderModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeModal">
       <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" @click.stop>
         <div class="flex items-center justify-between mb-4">
@@ -141,8 +158,8 @@
             </div>
           </div>
 
-          <!-- Progression -->
-          <div>
+          <!-- Progression (seulement pour les commandes non livrées) -->
+          <div v-if="selectedOrder.status !== 'livree'">
             <label class="block text-sm font-medium text-gray-700 mb-2">Progression</label>
             <div class="flex items-center space-x-4">
               <div class="flex-1">
@@ -191,67 +208,38 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 export default {
   name: 'OrdersTrackingSection',
-  setup() {
+  props: {
+    title: {
+      type: String,
+      default: 'Suivi des Commandes'
+    },
+    orders: {
+      type: Array,
+      default: () => []
+    },
+    allowedStatuses: {
+      type: Array,
+      default: () => ['en_attente', 'en_production', 'terminee', 'livree']
+    }
+  },
+  setup(props) {
     const showOrderModal = ref(false)
     const selectedOrder = ref(null)
+    const selectedStatusFilter = ref('')
 
-    const orders = ref([
-      {
-        id: 1,
-        number: 'CMD-2024-001',
-        date: new Date('2024-01-15'),
-        mainProduct: 'Pavé autobloquant 20x10',
-        otherProducts: 2,
-        amount: 12450,
-        status: 'livree',
-        products: [
-          { id: 1, name: 'Pavé autobloquant 20x10', quantity: 150, unit: 'm²', price: 45 },
-          { id: 2, name: 'Bordure T2 50x20x15', quantity: 80, unit: 'ml', price: 25 },
-          { id: 3, name: 'Sable de pose', quantity: 5, unit: 'm³', price: 180 }
-        ]
-      },
-      {
-        id: 2,
-        number: 'CMD-2024-002',
-        date: new Date('2024-01-18'),
-        mainProduct: 'Agglo creux 20x20x40',
-        otherProducts: 0,
-        amount: 3200,
-        status: 'en_production',
-        products: [
-          { id: 4, name: 'Agglo creux 20x20x40', quantity: 400, unit: 'unité', price: 8 }
-        ]
-      },
-      {
-        id: 3,
-        number: 'CMD-2024-003',
-        date: new Date('2024-01-20'),
-        mainProduct: 'Hourdis béton 16+4',
-        otherProducts: 1,
-        amount: 18600,
-        status: 'terminee',
-        products: [
-          { id: 5, name: 'Hourdis béton 16+4', quantity: 180, unit: 'm²', price: 95 },
-          { id: 6, name: 'Poutre précontrainte 4m', quantity: 12, unit: 'unité', price: 180 }
-        ]
-      },
-      {
-        id: 4,
-        number: 'CMD-2024-004',
-        date: new Date('2024-01-22'),
-        mainProduct: 'Dalle béton 40x40',
-        otherProducts: 0,
-        amount: 2800,
-        status: 'en_attente',
-        products: [
-          { id: 7, name: 'Dalle béton 40x40', quantity: 80, unit: 'm²', price: 35 }
-        ]
+    const displayedOrders = computed(() => {
+      let filtered = props.orders
+      
+      if (selectedStatusFilter.value) {
+        filtered = filtered.filter(order => order.status === selectedStatusFilter.value)
       }
-    ])
+      
+      return filtered.sort((a, b) => new Date(b.date) - new Date(a.date))
+    })
 
     const formatDate = (date) => {
       return date.toLocaleDateString('fr-FR', {
@@ -302,7 +290,7 @@ export default {
     }
 
     const viewOrder = (orderId) => {
-      selectedOrder.value = orders.value.find(order => order.id === orderId)
+      selectedOrder.value = props.orders.find(order => order.id === orderId)
       showOrderModal.value = true
     }
 
@@ -313,13 +301,19 @@ export default {
 
     const downloadOrder = (orderId) => {
       // Simulation du téléchargement
-      console.log('Téléchargement commande:', orderId)
+      alert(`Téléchargement de la commande #${orderId} en cours...`)
+    }
+
+    const refreshOrders = () => {
+      // Simulation du rafraîchissement
+      alert('Données mises à jour')
     }
 
     return {
-      orders,
       showOrderModal,
       selectedOrder,
+      selectedStatusFilter,
+      displayedOrders,
       formatDate,
       getStatusClass,
       getStatusDotClass,
@@ -327,7 +321,8 @@ export default {
       getProgressWidth,
       viewOrder,
       closeModal,
-      downloadOrder
+      downloadOrder,
+      refreshOrders
     }
   }
 }

@@ -21,7 +21,9 @@ class PermissionsTableSeeder extends Seeder
             'create_rawMaterial'=>'créer une matière première',   
             'update_rawMaterial'=>'modifier une matière première',   
             'delete_rawMaterial'=>'Supprimer une matière première',   
-            
+            'create_order'=>'créer commande',
+            'Cancel_order'=>'annuler commande',
+            'update_order'=>'modifier commande',
         ];
         
         foreach ($permissions as $id => $name) {
@@ -78,7 +80,9 @@ class PermissionsTableSeeder extends Seeder
 
 
         $clientPermissions = [
-           
+             $permissionIds['create_order'], 
+             $permissionIds['Cancel_order'], 
+             $permissionIds['update_order'], 
         ];
         $clientRole->permissions()->attach($clientPermissions);
     }

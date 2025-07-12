@@ -4,7 +4,7 @@
       <h2 class="text-xl font-bold text-gray-800">Créer une Commande</h2>
       <button 
         class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-        @click="resetOrder"
+        @click="openCustomerModal"
       >
         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -13,8 +13,42 @@
       </button>
     </div>
 
-    <!-- Étape 1: Sélection catégorie -->
-    <div class="space-y-4">
+    <!-- Message d'instruction -->
+    <div v-if="!customerInfo.isValid" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-blue-800">
+          Cliquez sur "Nouvelle Commande" pour commencer en saisissant vos informations personnelles.
+        </p>
+      </div>
+    </div>
+
+    <!-- Informations client validées -->
+    <div v-if="customerInfo.isValid" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <div>
+            <p class="text-green-800 font-medium">{{ customerInfo.prenom }} {{ customerInfo.nom }}</p>
+            <p class="text-green-600 text-sm">{{ customerInfo.email }}</p>
+          </div>
+        </div>
+        <button 
+          @click="openCustomerModal"
+          class="text-green-600 hover:text-green-800 text-sm underline"
+        >
+          Modifier
+        </button>
+      </div>
+    </div>
+
+    <!-- Étapes de commande (seulement si les infos client sont validées) -->
+    <div v-if="customerInfo.isValid" class="space-y-4">
+      <!-- Étape 1: Sélection catégorie -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
           1. Sélectionnez une catégorie
@@ -137,6 +171,127 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal des informations client -->
+    <div v-if="showCustomerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closeCustomerModal">
+      <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto" @click.stop>
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-lg font-bold text-gray-900">Informations Client</h3>
+          <button @click="closeCustomerModal" class="text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        
+        <form @submit.prevent="saveCustomerInfo" class="space-y-4">
+          <!-- Nom -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+            <input 
+              v-model="customerForm.nom"
+              type="text" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Votre nom"
+            >
+          </div>
+
+          <!-- Prénom -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
+            <input 
+              v-model="customerForm.prenom"
+              type="text" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Votre prénom"
+            >
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input 
+              v-model="customerForm.email"
+              type="email" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="votre@email.com"
+            >
+          </div>
+
+          <!-- Adresse -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Adresse *</label>
+            <textarea 
+              v-model="customerForm.adresse"
+              required
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Votre adresse complète"
+            ></textarea>
+          </div>
+
+          <!-- Téléphone -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
+            <input 
+              v-model="customerForm.telephone"
+              type="tel" 
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="0612345678"
+            >
+          </div>
+
+          <!-- Moyen de paiement -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Moyen de paiement *</label>
+            <select 
+              v-model="customerForm.moyenPaiement"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">Sélectionnez un moyen de paiement</option>
+              <option value="especes">Espèces</option>
+              <option value="carte">Carte bancaire</option>
+              <option value="cheque">Chèque</option>
+              <option value="virement">Virement bancaire</option>
+              <option value="credit">Crédit (30 jours)</option>
+            </select>
+          </div>
+
+          <!-- Commentaires -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Commentaires</label>
+            <textarea 
+              v-model="customerForm.commentaires"
+              rows="2"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Commentaires ou instructions particulières (optionnel)"
+            ></textarea>
+          </div>
+
+          <!-- Boutons -->
+          <div class="flex space-x-3 pt-4">
+            <button 
+              type="button"
+              @click="closeCustomerModal"
+              class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Annuler
+            </button>
+            <button 
+              type="submit"
+              class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Valider
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -148,6 +303,30 @@ export default {
   setup() {
     const selectedCategory = ref(null)
     const selectedProducts = ref([])
+    const showCustomerModal = ref(false)
+    
+    // Informations client
+    const customerInfo = ref({
+      nom: '',
+      prenom: '',
+      email: '',
+      adresse: '',
+      telephone: '',
+      moyenPaiement: '',
+      commentaires: '',
+      isValid: false
+    })
+
+    // Formulaire client (pour le modal)
+    const customerForm = ref({
+      nom: '',
+      prenom: '',
+      email: '',
+      adresse: '',
+      telephone: '',
+      moyenPaiement: '',
+      commentaires: ''
+    })
     
     const categories = ref([
       {
@@ -177,23 +356,40 @@ export default {
       { id: 2, categoryId: 1, name: 'Dalle béton 40x40', price: 35, unit: 'm²' },
       { id: 3, categoryId: 1, name: 'Pavé carrossable 20x20', price: 55, unit: 'm²' },
       
-      // Bordures & Caniveaux
       { id: 4, categoryId: 2, name: 'Bordure T2 50x20x15', price: 25, unit: 'ml' },
       { id: 5, categoryId: 2, name: 'Caniveau béton 30x30', price: 42, unit: 'ml' },
       { id: 6, categoryId: 2, name: 'Bordure jardinière 100x20', price: 38, unit: 'ml' },
       
-      // Agglos & Blocs
       { id: 7, categoryId: 3, name: 'Agglo creux 20x20x40', price: 8, unit: 'unité' },
       { id: 8, categoryId: 3, name: 'Bloc béton plein 15x20x40', price: 12, unit: 'unité' },
       { id: 9, categoryId: 3, name: 'Agglo isolant 20x25x50', price: 15, unit: 'unité' },
       
-      // Hourdis & Poutres
       { id: 10, categoryId: 4, name: 'Hourdis béton 16+4', price: 95, unit: 'm²' },
       { id: 11, categoryId: 4, name: 'Poutre précontrainte 4m', price: 180, unit: 'unité' },
       { id: 12, categoryId: 4, name: 'Plancher alvéolaire 20cm', price: 120, unit: 'm²' }
     ])
 
     const productQuantities = ref({})
+
+    // Fonctions du modal client
+    const openCustomerModal = () => {
+      // Pré-remplir le formulaire avec les données existantes
+      customerForm.value = { ...customerInfo.value }
+      showCustomerModal.value = true
+    }
+
+    const closeCustomerModal = () => {
+      showCustomerModal.value = false
+    }
+
+    const saveCustomerInfo = () => {
+      // Copier les données du formulaire vers customerInfo
+      customerInfo.value = {
+        ...customerForm.value,
+        isValid: true
+      }
+      showCustomerModal.value = false
+    }
 
     const getProductsCount = (categoryId) => {
       return products.value.filter(product => product.categoryId === categoryId).length
@@ -270,20 +466,36 @@ export default {
       selectedCategory.value = null
       selectedProducts.value = []
       productQuantities.value = {}
+      // Ne pas réinitialiser customerInfo pour garder les données du client
     }
 
     const validateOrder = () => {
+      const orderData = {
+        customer: customerInfo.value,
+        products: selectedProducts.value,
+        total: totalAmount.value,
+        date: new Date()
+      }
       
-      alert(`Commande validée pour un total de ${totalAmount.value} MAD`)
+      console.log('Commande validée:', orderData)
+      alert(`Commande validée pour ${customerInfo.value.prenom} ${customerInfo.value.nom} - Total: ${totalAmount.value.toLocaleString()} MAD`)
+      
+      // Réinitialiser seulement la sélection des produits
       resetOrder()
     }
 
     return {
       selectedCategory,
       selectedProducts,
+      showCustomerModal,
+      customerInfo,
+      customerForm,
       categories,
       products,
       productQuantities,
+      openCustomerModal,
+      closeCustomerModal,
+      saveCustomerInfo,
       getProductsCount,
       selectCategory,
       getProductsByCategory,
@@ -315,6 +527,20 @@ export default {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Animation pour le modal */
+.fixed {
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 

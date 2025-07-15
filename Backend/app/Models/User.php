@@ -15,7 +15,13 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     use HasFactory, Notifiable, HasApiTokens, InteractsWithMedia;
     
     protected $fillable = [
-        'name', 'email', 'phone', 'password', 'role_id','email_verified_at'
+        'name', 
+        'email', 
+        'phone', 
+        'password', 
+        'role_id',
+        'email_verified_at',
+        'adresse'  
     ];
 
     protected $hidden = [
@@ -31,6 +37,11 @@ class User extends Authenticatable implements HasMedia, MustVerifyEmail
     public function role()
     {
         return $this->belongsTo(Role::class);
+    }
+
+    public function commandes()
+    {
+        return $this->hasMany(Commande::class);
     }
 
     public function hasVerifiedEmail()

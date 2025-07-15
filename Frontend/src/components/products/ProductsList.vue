@@ -45,7 +45,7 @@
           class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300 group"
         >
           <!-- Image du produit -->
-          <div class="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+          <div class="relative h-32 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
             <img 
               v-if="product.image" 
               :src="product.image" 

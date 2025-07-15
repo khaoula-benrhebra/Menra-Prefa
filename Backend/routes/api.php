@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\RawMaterialController;
+use App\Http\Controllers\Api\CommandeController;
 
 // Route utilisateur de base
 Route::get('/user', function (Request $request) {
@@ -81,9 +82,13 @@ Route::middleware(['auth:sanctum', 'auth.gates'])->group(function () {
         });
     });
 
-    // Routes protégées par rôle Client
-    Route::middleware('role:Client')->group(function () {
-        // Routes réservées aux clients
+    // Routes pour la gestion des commandes (Clients uniquement)
+    Route::prefix('commandes')->middleware('role:Client')->group(function () {
+        Route::get('/', [CommandeController::class, 'index']);
+        Route::get('/{id}', [CommandeController::class, 'show']);
+        Route::post('/', [CommandeController::class, 'store']);
+        Route::put('/{id}', [CommandeController::class, 'update']);
+        Route::delete('/{id}', [CommandeController::class, 'destroy']);
     });
     
     // Routes protégées par rôle Agent commercial

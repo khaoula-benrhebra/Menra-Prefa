@@ -1,14 +1,18 @@
 <template>
-  <header class="bg-white shadow-sm border-b border-gray-200">
+  <header 
+    class="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50 transition-transform duration-300"
+    :class="{
+      '-translate-y-full': !showHeader && scrolled,
+      'translate-y-0': showHeader || !scrolled
+    }"
+  >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <!-- Logo -->
         <div class="flex items-center">
           <router-link to="/" class="flex items-center">
             <img src="/assets/images/logo.png" alt="Menara Prefa Logo" class="h-10 w-auto" />
-            <!-- <span class="ml-3 text-xl font-bold text-menara-dark">
-              Ménara Préfa
-            </span> -->
+          
           </router-link>
         </div>
 
@@ -67,12 +71,16 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
 export default {
   name: 'AppHeader',
   setup() {
     const isMobileMenuOpen = ref(false)
+    const showHeader = ref(true)
+    const scrolled = ref(false)
+    const lastScrollY = ref(0)
+    const scrollThreshold = 100 // Seuil de scroll en pixels
 
     const toggleMobileMenu = () => {
       isMobileMenuOpen.value = !isMobileMenuOpen.value
@@ -82,8 +90,35 @@ export default {
       isMobileMenuOpen.value = false
     }
 
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY
+
+     
+      scrolled.value = currentScrollY > scrollThreshold
+
+    
+      if (currentScrollY > lastScrollY.value && currentScrollY > scrollThreshold) {
+        showHeader.value = false
+      } else if (currentScrollY < lastScrollY.value) {
+        
+        showHeader.value = true
+      }
+
+      lastScrollY.value = currentScrollY
+    }
+
+    onMounted(() => {
+      window.addEventListener('scroll', handleScroll, { passive: true })
+    })
+
+    onUnmounted(() => {
+      window.removeEventListener('scroll', handleScroll)
+    })
+
     return {
       isMobileMenuOpen,
+      showHeader,
+      scrolled,
       toggleMobileMenu,
       closeMobileMenu
     }
@@ -92,7 +127,7 @@ export default {
 </script>
 
 <style scoped>
-/* Définition des couleurs personnalisées */
+
 .text-menara-dark {
   color: #1f2937;
 }
@@ -109,7 +144,7 @@ export default {
   color: rgb(192, 15, 26);
 }
 
-/* Styles pour les liens actifs */
+
 .router-link-active {
   color: rgb(192, 15, 26);
 }

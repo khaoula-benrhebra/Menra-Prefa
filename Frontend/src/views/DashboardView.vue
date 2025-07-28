@@ -19,29 +19,7 @@
             </h1>
           </div>
 
-          <!-- Navigation Menu -->
-          <div class="hidden md:block">
-            <div class="ml-10 flex items-baseline space-x-4">
-              <router-link
-                to="/dashboard"
-                class="text-white hover:text-menara-red px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Tableau de bord
-              </router-link>
-              <router-link
-                to="/orders"
-                class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Commandes
-              </router-link>
-              <router-link
-                to="/"
-                class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-              >
-                Retour à l'accueil
-              </router-link>
-            </div>
-          </div>
+          
 
           <!-- User Menu -->
           <div class="relative">
@@ -211,7 +189,7 @@ export default {
       }
     }
 
-    // Close dropdowns when clicking outside
+ 
     const handleClickOutside = (event) => {
       if (!event.target.closest('.relative')) {
         showUserMenu.value = false

@@ -54,9 +54,6 @@ class Product extends Model implements HasMedia
             ->singleFile();
     }
 
-    /**
-     * Conversions d'images (optionnel - pour les miniatures)
-     */
     public function registerMediaConversions(Media $media = null): void
     {
         $this->addMediaConversion('thumb')

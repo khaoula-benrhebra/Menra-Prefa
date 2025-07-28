@@ -93,6 +93,6 @@ Route::middleware(['auth:sanctum', 'auth.gates'])->group(function () {
     
     // Routes protégées par rôle Agent commercial
     Route::middleware('role:Agent commercial')->group(function () {
-        // Routes pour agents commercial
+       
     });
 });

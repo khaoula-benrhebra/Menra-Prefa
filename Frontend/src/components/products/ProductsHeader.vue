@@ -1,6 +1,14 @@
 <template>
-  <section class="bg-gradient-to-br from-menara-blue to-menara-dark text-white py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <section class="relative bg-gradient-to-br from-menara-blue to-menara-dark text-white py-16 overflow-hidden">
+    <!-- Background Image -->
+    <div class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20" 
+         style="background-image: url('https://images.unsplash.com/photo-1504307651254-35680f356dfd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2076&q=80')">
+    </div>
+    
+    <!-- Overlay -->
+    <div class="absolute inset-0 bg-black/20"></div>
+    
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Titre principal -->
       <div class="text-center mb-12">
         <h1 class="text-4xl md:text-5xl font-bold mb-4">
@@ -10,29 +18,6 @@
           Découvrez notre gamme complète de produits préfabriqués en béton, 
           conçus pour répondre à tous vos besoins de construction
         </p>
-      </div>
-
-      <!-- Statistiques -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div class="text-center bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div class="text-3xl md:text-4xl font-bold text-menara-red mb-2">{{ stats.totalProducts }}</div>
-          <div class="text-sm md:text-base opacity-90">Produits disponibles</div>
-        </div>
-        
-        <div class="text-center bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div class="text-3xl md:text-4xl font-bold text-menara-red mb-2">{{ categoriesCount }}</div>
-          <div class="text-sm md:text-base opacity-90">Catégories</div>
-        </div>
-        
-        <div class="text-center bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div class="text-3xl md:text-4xl font-bold text-menara-red mb-2">{{ stats.inStock }}%</div>
-          <div class="text-sm md:text-base opacity-90">En stock</div>
-        </div>
-        
-        <div class="text-center bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-          <div class="text-3xl md:text-4xl font-bold text-menara-red mb-2">{{ stats.totalStock }}+</div>
-          <div class="text-sm md:text-base opacity-90">Unités en stock</div>
-        </div>
       </div>
 
       <!-- Catégories principales -->
@@ -61,7 +46,7 @@
             {{ category.name }}
           </span>
           
-          <!-- Afficher un indicateur s'il y a plus de catégories -->
+         
           <span 
             v-if="categories.length > maxDisplayedCategories"
             class="px-4 py-2 bg-white/10 border border-white/20 rounded-full text-sm font-medium backdrop-blur-sm"
@@ -79,12 +64,7 @@
       </div>
     </div>
 
-    <!-- Motif décoratif -->
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
-      <div class="absolute -top-4 -right-4 w-32 h-32 bg-menara-red/10 rounded-full blur-xl"></div>
-      <div class="absolute top-1/2 -left-8 w-24 h-24 bg-white/5 rounded-full blur-lg"></div>
-      <div class="absolute bottom-8 right-1/4 w-16 h-16 bg-menara-red/20 rounded-full blur-md"></div>
-    </div>
+    
   </section>
 </template>
 
@@ -105,17 +85,7 @@ export default {
   },
   emits: ['category-selected'],
   setup(props) {
-    // Statistiques simulées (à terme, ces données viendront aussi d'une API)
-    const stats = ref({
-      totalProducts: 8,
-      inStock: 88,
-      totalStock: 25000
-    })
-
     const maxDisplayedCategories = ref(6)
-
-    // Nombre de catégories dynamique
-    const categoriesCount = computed(() => props.categories.length)
 
     // Catégories à afficher (limitées)
     const displayedCategories = computed(() => {
@@ -123,9 +93,7 @@ export default {
     })
 
     return {
-      stats,
       maxDisplayedCategories,
-      categoriesCount,
       displayedCategories
     }
   }
@@ -194,10 +162,6 @@ export default {
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .grid-cols-2.md\:grid-cols-4 {
-    gap: 1rem;
-  }
-  
   .bg-white\/10.backdrop-blur-sm {
     padding: 1rem;
   }

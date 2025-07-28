@@ -13,8 +13,14 @@
       </button>
     </div>
 
+    <!-- Indicateur de chargement -->
+    <div v-if="isLoadingData" class="text-center py-8">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+      <p class="mt-2 text-gray-600">Chargement des données...</p>
+    </div>
+
     <!-- Message d'instruction -->
-    <div v-if="!customerInfo.isValid" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <div v-if="!customerInfo.isValid && !isLoadingData" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
       <div class="flex items-center">
         <svg class="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -25,15 +31,35 @@
       </div>
     </div>
 
+    <!-- Message d'erreur -->
+    <div v-if="errorMessage" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 text-red-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-red-800">{{ errorMessage }}</p>
+      </div>
+    </div>
+
+    <!-- Message de succès -->
+    <div v-if="successMessage" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="text-green-800">{{ successMessage }}</p>
+      </div>
+    </div>
+
     <!-- Informations client validées -->
-    <div v-if="customerInfo.isValid" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+    <div v-if="customerInfo.isValid && !isLoadingData" class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center">
           <svg class="w-5 h-5 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
           <div>
-            <p class="text-green-800 font-medium">{{ customerInfo.prenom }} {{ customerInfo.nom }}</p>
+            <p class="text-green-800 font-medium">{{ customerInfo.nom }}</p>
             <p class="text-green-600 text-sm">{{ customerInfo.email }}</p>
           </div>
         </div>
@@ -47,13 +73,16 @@
     </div>
 
     <!-- Étapes de commande (seulement si les infos client sont validées) -->
-    <div v-if="customerInfo.isValid" class="space-y-4">
+    <div v-if="customerInfo.isValid && !isLoadingData" class="space-y-4">
       <!-- Étape 1: Sélection catégorie -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">
           1. Sélectionnez une catégorie
         </label>
-        <div class="grid grid-cols-2 gap-3">
+        <div v-if="categories.length === 0" class="text-gray-500 text-center py-4">
+          Aucune catégorie disponible
+        </div>
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div 
             v-for="category in categories" 
             :key="category.id"
@@ -76,12 +105,12 @@
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
                 >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="category.icon"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                 </svg>
               </div>
               <div>
                 <h3 class="font-medium text-gray-900">{{ category.name }}</h3>
-                <p class="text-sm text-gray-500">{{ getProductsCount(category.id) }} produits</p>
+                <p class="text-sm text-gray-500">{{ category.products_count }} produits</p>
               </div>
             </div>
           </div>
@@ -93,7 +122,10 @@
         <label class="block text-sm font-medium text-gray-700 mb-2">
           2. Sélectionnez vos produits
         </label>
-        <div class="space-y-3 max-h-64 overflow-y-auto pr-2">
+        <div v-if="getProductsByCategory(selectedCategory).length === 0" class="text-gray-500 text-center py-4">
+          Aucun produit disponible dans cette catégorie
+        </div>
+        <div v-else class="space-y-3 max-h-64 overflow-y-auto pr-2">
           <div 
             v-for="product in getProductsByCategory(selectedCategory)" 
             :key="product.id"
@@ -111,7 +143,8 @@
               <label :for="'product-' + product.id" class="flex-1 cursor-pointer">
                 <div>
                   <h4 class="font-medium text-gray-900">{{ product.name }}</h4>
-                  <p class="text-sm text-gray-500">{{ product.price }} MAD/{{ product.unit }}</p>
+                  <p class="text-sm text-gray-500">{{ formatCurrency(product.price) }}</p>
+                  <p class="text-xs text-gray-400">Stock: {{ product.stock_actuel }}</p>
                 </div>
               </label>
             </div>
@@ -152,21 +185,22 @@
           <h3 class="font-medium text-gray-900 mb-2">Résumé de la commande</h3>
           <div class="space-y-1 text-sm">
             <div v-for="item in selectedProducts" :key="item.id" class="flex justify-between">
-              <span>{{ item.name }} ({{ item.quantity }} {{ item.unit }})</span>
-              <span class="font-medium">{{ (item.price * item.quantity).toLocaleString() }} MAD</span>
+              <span>{{ item.name }} ({{ item.quantity }})</span>
+              <span class="font-medium">{{ formatCurrency(item.price * item.quantity) }}</span>
             </div>
           </div>
           <div class="border-t pt-2 mt-2">
             <div class="flex justify-between font-bold">
               <span>Total</span>
-              <span class="text-red-600">{{ totalAmount.toLocaleString() }} MAD</span>
+              <span class="text-red-600">{{ formatCurrency(totalAmount) }}</span>
             </div>
           </div>
           <button 
             class="w-full mt-4 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors"
             @click="validateOrder"
+            :disabled="isLoading || selectedProducts.length === 0"
           >
-            Valider la Commande
+            {{ isLoading ? 'Création en cours...' : 'Valider la Commande' }}
           </button>
         </div>
       </div>
@@ -194,18 +228,6 @@
               required
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Votre nom"
-            >
-          </div>
-
-          <!-- Prénom -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
-            <input 
-              v-model="customerForm.prenom"
-              type="text" 
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Votre prénom"
             >
           </div>
 
@@ -254,11 +276,9 @@
               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Sélectionnez un moyen de paiement</option>
-              <option value="especes">Espèces</option>
-              <option value="carte">Carte bancaire</option>
-              <option value="cheque">Chèque</option>
+              <option value="espece">Espèces</option>
               <option value="virement">Virement bancaire</option>
-              <option value="credit">Crédit (30 jours)</option>
+              <option value="cheque">Chèque</option>
             </select>
           </div>
 
@@ -296,19 +316,46 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useCommandes } from '@/composables/useCommandes'
+import { useProducts } from '@/composables/useProducts'
+import { useCategories } from '@/composables/useCategories'
 
 export default {
   name: 'CreateOrderSection',
   setup() {
+    const { 
+      createCommande, 
+      isLoading, 
+      error,
+      formatCurrency,
+      refreshCommandes
+    } = useCommandes()
+    
+    const { 
+      products, 
+      loadProducts,
+      isLoading: productsLoading,
+      error: productsError,
+      getProductsByCategory
+    } = useProducts()
+
+    const { 
+      categories, 
+      loadCategories,
+      isLoading: categoriesLoading,
+      error: categoriesError
+    } = useCategories()
+
     const selectedCategory = ref(null)
     const selectedProducts = ref([])
     const showCustomerModal = ref(false)
+    const errorMessage = ref('')
+    const successMessage = ref('')
     
-    // Informations client
+    // Informations client (sans prénom)
     const customerInfo = ref({
       nom: '',
-      prenom: '',
       email: '',
       adresse: '',
       telephone: '',
@@ -317,65 +364,54 @@ export default {
       isValid: false
     })
 
-    // Formulaire client (pour le modal)
+    // Formulaire client 
     const customerForm = ref({
       nom: '',
-      prenom: '',
       email: '',
       adresse: '',
       telephone: '',
       moyenPaiement: '',
       commentaires: ''
     })
-    
-    const categories = ref([
-      {
-        id: 1,
-        name: 'Pavés & Dalles',
-        icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4'
-      },
-      {
-        id: 2,
-        name: 'Bordures & Caniveaux',
-        icon: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z'
-      },
-      {
-        id: 3,
-        name: 'Agglos & Blocs',
-        icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16'
-      },
-      {
-        id: 4,
-        name: 'Hourdis & Poutres',
-        icon: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'
-      }
-    ])
-
-    const products = ref([
-      { id: 1, categoryId: 1, name: 'Pavé autobloquant 20x10', price: 45, unit: 'm²' },
-      { id: 2, categoryId: 1, name: 'Dalle béton 40x40', price: 35, unit: 'm²' },
-      { id: 3, categoryId: 1, name: 'Pavé carrossable 20x20', price: 55, unit: 'm²' },
-      
-      { id: 4, categoryId: 2, name: 'Bordure T2 50x20x15', price: 25, unit: 'ml' },
-      { id: 5, categoryId: 2, name: 'Caniveau béton 30x30', price: 42, unit: 'ml' },
-      { id: 6, categoryId: 2, name: 'Bordure jardinière 100x20', price: 38, unit: 'ml' },
-      
-      { id: 7, categoryId: 3, name: 'Agglo creux 20x20x40', price: 8, unit: 'unité' },
-      { id: 8, categoryId: 3, name: 'Bloc béton plein 15x20x40', price: 12, unit: 'unité' },
-      { id: 9, categoryId: 3, name: 'Agglo isolant 20x25x50', price: 15, unit: 'unité' },
-      
-      { id: 10, categoryId: 4, name: 'Hourdis béton 16+4', price: 95, unit: 'm²' },
-      { id: 11, categoryId: 4, name: 'Poutre précontrainte 4m', price: 180, unit: 'unité' },
-      { id: 12, categoryId: 4, name: 'Plancher alvéolaire 20cm', price: 120, unit: 'm²' }
-    ])
 
     const productQuantities = ref({})
 
+    // Computed pour vérifier si on est en train de charger
+    const isLoadingData = computed(() => {
+      return isLoading.value || productsLoading.value || categoriesLoading.value
+    })
+
+    // Charger les données au montage
+    onMounted(async () => {
+      try {
+        errorMessage.value = ''
+        await Promise.all([
+          loadProducts(),
+          loadCategories()
+        ])
+        console.log('Données chargées:', {
+          products: products.value.length,
+          categories: categories.value.length
+        })
+      } catch (err) {
+        console.error('Erreur lors du chargement des données:', err)
+        errorMessage.value = 'Erreur lors du chargement des données: ' + err.message
+      }
+    })
+
+    // Surveiller les erreurs
+    watch([error, productsError, categoriesError], ([commandeError, prodError, catError]) => {
+      if (commandeError || prodError || catError) {
+        errorMessage.value = commandeError || prodError || catError
+      }
+    })
+
     // Fonctions du modal client
     const openCustomerModal = () => {
-      // Pré-remplir le formulaire avec les données existantes
       customerForm.value = { ...customerInfo.value }
       showCustomerModal.value = true
+      errorMessage.value = ''
+      successMessage.value = ''
     }
 
     const closeCustomerModal = () => {
@@ -383,24 +419,30 @@ export default {
     }
 
     const saveCustomerInfo = () => {
-      // Copier les données du formulaire vers customerInfo
+      // Validation 
+      if (!customerForm.value.nom || !customerForm.value.email || 
+          !customerForm.value.adresse || !customerForm.value.telephone || !customerForm.value.moyenPaiement) {
+        errorMessage.value = 'Tous les champs obligatoires doivent être remplis'
+        return
+      }
+
       customerInfo.value = {
         ...customerForm.value,
         isValid: true
       }
       showCustomerModal.value = false
-    }
-
-    const getProductsCount = (categoryId) => {
-      return products.value.filter(product => product.categoryId === categoryId).length
+      errorMessage.value = ''
+      successMessage.value = 'Informations client sauvegardées avec succès'
+      
+      setTimeout(() => {
+        successMessage.value = ''
+      }, 3000)
     }
 
     const selectCategory = (categoryId) => {
       selectedCategory.value = categoryId
-    }
-
-    const getProductsByCategory = (categoryId) => {
-      return products.value.filter(product => product.categoryId === categoryId)
+      selectedProducts.value = []
+      productQuantities.value = {}
     }
 
     const isProductSelected = (productId) => {
@@ -409,6 +451,8 @@ export default {
 
     const toggleProduct = (productId) => {
       const product = products.value.find(p => p.id === productId)
+      if (!product) return
+
       const index = selectedProducts.value.findIndex(p => p.id === productId)
       
       if (index > -1) {
@@ -424,7 +468,7 @@ export default {
     }
 
     const updateQuantity = (productId, quantity) => {
-      const qty = parseInt(quantity) || 1
+      const qty = Math.max(1, parseInt(quantity) || 1)
       productQuantities.value[productId] = qty
       
       const productIndex = selectedProducts.value.findIndex(p => p.id === productId)
@@ -435,7 +479,6 @@ export default {
 
     const validateQuantity = (productId) => {
       if (!productQuantities.value[productId] || productQuantities.value[productId] < 1) {
-        productQuantities.value[productId] = 1
         updateQuantity(productId, 1)
       }
     }
@@ -458,7 +501,7 @@ export default {
 
     const totalAmount = computed(() => {
       return selectedProducts.value.reduce((total, product) => {
-        return total + (product.price * product.quantity)
+        return total + (parseFloat(product.price) * product.quantity)
       }, 0)
     })
 
@@ -466,25 +509,57 @@ export default {
       selectedCategory.value = null
       selectedProducts.value = []
       productQuantities.value = {}
-      // Ne pas réinitialiser customerInfo pour garder les données du client
+      errorMessage.value = ''
+      successMessage.value = ''
     }
 
-    const validateOrder = () => {
-      const orderData = {
-        customer: customerInfo.value,
-        products: selectedProducts.value,
-        total: totalAmount.value,
-        date: new Date()
+    const validateOrder = async () => {
+      try {
+        errorMessage.value = ''
+        successMessage.value = ''
+        
+        if (!customerInfo.value.isValid) {
+          errorMessage.value = 'Veuillez remplir les informations client'
+          return
+        }
+
+        if (selectedProducts.value.length === 0) {
+          errorMessage.value = 'Veuillez sélectionner au moins un produit'
+          return
+        }
+
+        const commandeData = {
+          adresse: customerInfo.value.adresse,
+          moyen_paiement: customerInfo.value.moyenPaiement,
+          commentaire: customerInfo.value.commentaires || null,
+          produits: selectedProducts.value.map(product => ({
+            product_id: product.id,
+            quantite: product.quantity
+          }))
+        }
+        
+        const result = await createCommande(commandeData)
+        
+        if (result.success) {
+          successMessage.value = `Commande créée avec succès! Numéro: ${result.commande?.id || 'N/A'} - Total: ${formatCurrency(totalAmount.value)}`
+          
+          await refreshCommandes()
+          resetOrder()
+          
+          setTimeout(() => {
+            successMessage.value = ''
+          }, 5000)
+        } else {
+          errorMessage.value = result.message || 'Erreur lors de la création de la commande'
+        }
+      } catch (error) {
+        console.error('Erreur lors de la validation de la commande:', error)
+        errorMessage.value = error.message || 'Erreur lors de la création de la commande'
       }
-      
-      console.log('Commande validée:', orderData)
-      alert(`Commande validée pour ${customerInfo.value.prenom} ${customerInfo.value.nom} - Total: ${totalAmount.value.toLocaleString()} MAD`)
-      
-      // Réinitialiser seulement la sélection des produits
-      resetOrder()
     }
 
     return {
+      // État
       selectedCategory,
       selectedProducts,
       showCustomerModal,
@@ -493,10 +568,15 @@ export default {
       categories,
       products,
       productQuantities,
+      isLoading,
+      isLoadingData,
+      errorMessage,
+      successMessage,
+      
+      // Fonctions
       openCustomerModal,
       closeCustomerModal,
       saveCustomerInfo,
-      getProductsCount,
       selectCategory,
       getProductsByCategory,
       isProductSelected,
@@ -508,7 +588,8 @@ export default {
       getProductQuantity,
       totalAmount,
       resetOrder,
-      validateOrder
+      validateOrder,
+      formatCurrency
     }
   }
 }
@@ -530,7 +611,6 @@ export default {
   }
 }
 
-/* Animation pour le modal */
 .fixed {
   animation: modalFadeIn 0.2s ease-out;
 }
@@ -544,7 +624,6 @@ export default {
   }
 }
 
-/* Style pour la scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }

@@ -15,16 +15,33 @@
         <button 
           @click="refreshOrders"
           class="p-2 text-gray-500 hover:text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+          :disabled="isLoading"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5" :class="{ 'animate-spin': isLoading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
           </svg>
         </button>
       </div>
     </div>
 
+    <!-- Message de chargement -->
+    <div v-if="isLoading" class="flex items-center justify-center py-12">
+      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <span class="ml-2 text-gray-600">Chargement des commandes...</span>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-red-800">{{ error }}</span>
+      </div>
+    </div>
+
     <!-- Message si aucune commande -->
-    <div v-if="displayedOrders.length === 0" class="text-center py-12">
+    <div v-else-if="displayedOrders.length === 0" class="text-center py-12">
       <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
       </svg>
@@ -70,7 +87,7 @@
               </div>
             </td>
             <td class="py-4">
-              <span class="font-medium text-gray-900">{{ order.amount.toLocaleString() }} MAD</span>
+              <span class="font-medium text-gray-900">{{ formatCurrency(order.amount) }}</span>
             </td>
             <td class="py-4">
               <span 
@@ -85,7 +102,7 @@
               <div class="flex space-x-2">
                 <button 
                   class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
-                  @click="viewOrder(order.id)"
+                  @click="viewOrder(order)"
                   title="Voir les détails"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +112,7 @@
                 </button>
                 <button 
                   class="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded"
-                  @click="downloadOrder(order.id)"
+                  @click="downloadOrder(order)"
                   title="Télécharger"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,13 +175,31 @@
             </div>
           </div>
 
-          <!-- Progression (seulement pour les commandes non livrées) -->
-          <div v-if="selectedOrder.status !== 'livree'">
+          <!-- Adresse de livraison -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Adresse de livraison</label>
+            <p class="mt-1 text-sm text-gray-900">{{ selectedOrder.address }}</p>
+          </div>
+
+          <!-- Moyen de paiement -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Moyen de paiement</label>
+            <p class="mt-1 text-sm text-gray-900">{{ getMoyenPaiementText(selectedOrder.paymentMethod) }}</p>
+          </div>
+
+          <!-- Commentaire -->
+          <div v-if="selectedOrder.comment">
+            <label class="block text-sm font-medium text-gray-700">Commentaire</label>
+            <p class="mt-1 text-sm text-gray-900">{{ selectedOrder.comment }}</p>
+          </div>
+
+          <!-- Progression -->
+          <div v-if="selectedOrder.status !== 'livree' && selectedOrder.status !== 'annulee'">
             <label class="block text-sm font-medium text-gray-700 mb-2">Progression</label>
             <div class="flex items-center space-x-4">
               <div class="flex-1">
                 <div class="flex justify-between text-sm text-gray-600 mb-1">
-                  <span>Commande validée</span>
+                  <span>En attente</span>
                   <span>En production</span>
                   <span>Terminée</span>
                   <span>Livrée</span>
@@ -189,7 +224,7 @@
                   <p class="font-medium text-gray-900">{{ product.name }}</p>
                   <p class="text-sm text-gray-600">{{ product.quantity }} {{ product.unit }}</p>
                 </div>
-                <span class="font-medium text-gray-900">{{ (product.price * product.quantity).toLocaleString() }} MAD</span>
+                <span class="font-medium text-gray-900">{{ formatCurrency(product.price * product.quantity) }}</span>
               </div>
             </div>
           </div>
@@ -198,7 +233,7 @@
           <div class="border-t pt-4">
             <div class="flex justify-between items-center">
               <span class="text-lg font-bold text-gray-900">Total</span>
-              <span class="text-lg font-bold text-red-600">{{ selectedOrder.amount.toLocaleString() }} MAD</span>
+              <span class="text-lg font-bold text-red-600">{{ formatCurrency(selectedOrder.amount) }}</span>
             </div>
           </div>
         </div>
@@ -209,6 +244,7 @@
 
 <script>
 import { ref, computed } from 'vue'
+import { useCommandes } from '@/composables/useCommandes'
 
 export default {
   name: 'OrdersTrackingSection',
@@ -227,6 +263,17 @@ export default {
     }
   },
   setup(props) {
+    const { 
+      getCommandeStatusText, 
+      getCommandeStatusColor,
+      getMoyenPaiementText,
+      formatDate,
+      formatCurrency,
+      refreshCommandes,
+      isLoading,
+      error
+    } = useCommandes()
+
     const showOrderModal = ref(false)
     const selectedOrder = ref(null)
     const selectedStatusFilter = ref('')
@@ -241,56 +288,32 @@ export default {
       return filtered.sort((a, b) => new Date(b.date) - new Date(a.date))
     })
 
-    const formatDate = (date) => {
-      return date.toLocaleDateString('fr-FR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      })
-    }
-
     const getStatusClass = (status) => {
-      const classes = {
-        'en_attente': 'bg-yellow-100 text-yellow-800',
-        'en_production': 'bg-blue-100 text-blue-800',
-        'terminee': 'bg-green-100 text-green-800',
-        'livree': 'bg-gray-100 text-gray-800'
-      }
-      return classes[status] || 'bg-gray-100 text-gray-800'
+      const color = getCommandeStatusColor(status)
+      return `bg-${color}-100 text-${color}-800`
     }
 
     const getStatusDotClass = (status) => {
-      const classes = {
-        'en_attente': 'bg-yellow-400',
-        'en_production': 'bg-blue-400',
-        'terminee': 'bg-green-400',
-        'livree': 'bg-gray-400'
-      }
-      return classes[status] || 'bg-gray-400'
+      const color = getCommandeStatusColor(status)
+      return `bg-${color}-400`
     }
 
     const getStatusText = (status) => {
-      const texts = {
-        'en_attente': 'En attente',
-        'en_production': 'En production',
-        'terminee': 'Terminée',
-        'livree': 'Livrée'
-      }
-      return texts[status] || 'Inconnu'
+      return getCommandeStatusText(status)
     }
 
     const getProgressWidth = (status) => {
-      const progress = {
+      const progressMap = {
         'en_attente': '25%',
         'en_production': '50%',
         'terminee': '75%',
         'livree': '100%'
       }
-      return progress[status] || '0%'
+      return progressMap[status] || '0%'
     }
 
-    const viewOrder = (orderId) => {
-      selectedOrder.value = props.orders.find(order => order.id === orderId)
+    const viewOrder = (order) => {
+      selectedOrder.value = order
       showOrderModal.value = true
     }
 
@@ -299,14 +322,41 @@ export default {
       selectedOrder.value = null
     }
 
-    const downloadOrder = (orderId) => {
-      // Simulation du téléchargement
-      alert(`Téléchargement de la commande #${orderId} en cours...`)
+    const downloadOrder = (order) => {
+     
+      const content = `
+FACTURE - Commande #${order.number}
+===============================
+
+Date: ${formatDate(order.date)}
+Statut: ${getStatusText(order.status)}
+Adresse: ${order.address}
+Moyen de paiement: ${getMoyenPaiementText(order.paymentMethod)}
+
+PRODUITS:
+${order.products.map(p => `- ${p.name} x${p.quantity} = ${formatCurrency(p.price * p.quantity)}`).join('\n')}
+
+TOTAL: ${formatCurrency(order.amount)}
+      `.trim()
+
+    
+      const blob = new Blob([content], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `commande-${order.number}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
     }
 
-    const refreshOrders = () => {
-      // Simulation du rafraîchissement
-      alert('Données mises à jour')
+    const refreshOrders = async () => {
+      try {
+        await refreshCommandes()
+      } catch (error) {
+        console.error('Erreur lors du rafraîchissement:', error)
+      }
     }
 
     return {
@@ -314,11 +364,15 @@ export default {
       selectedOrder,
       selectedStatusFilter,
       displayedOrders,
+      isLoading,
+      error,
       formatDate,
+      formatCurrency,
       getStatusClass,
       getStatusDotClass,
       getStatusText,
       getProgressWidth,
+      getMoyenPaiementText,
       viewOrder,
       closeModal,
       downloadOrder,
@@ -340,6 +394,20 @@ export default {
   }
   to {
     opacity: 1;
+  }
+}
+
+/* Animation de rotation pour le bouton refresh */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

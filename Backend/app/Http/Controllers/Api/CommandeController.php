@@ -52,58 +52,42 @@ class CommandeController extends Controller
         // Mise à jour de l'adresse utilisateur
         $request->user()->update(['adresse' => $request->adresse]);
 
-        // Vérification du stock
-        $stockErrors = [];
+        // Vérification du stock et détermination du statut
         $total = 0;
         $productsToUpdate = [];
+        $allProductsAvailable = true;
         
         foreach ($request->produits as $produit) {
             $product = Product::findOrFail($produit['product_id']);
             
             if ($product->stock_actuel < $produit['quantite']) {
-                $stockErrors[] = [
-                    'product_id' => $product->id,
-                    'nom' => $product->nom,
-                    'quantite_demandee' => $produit['quantite'],
-                    'stock_disponible' => $product->stock_actuel
-                ];
-            } else {
-                $total += $product->prix_unitaire * $produit['quantite'];
-                $productsToUpdate[] = [
-                    'product' => $product,
-                    'quantite' => $produit['quantite']
-                ];
+                $allProductsAvailable = false;
             }
+            
+            $total += $product->prix_unitaire * $produit['quantite'];
+            $productsToUpdate[] = [
+                'product' => $product,
+                'quantite' => $produit['quantite']
+            ];
         }
 
-        if (!empty($stockErrors)) {
-            $message = "La quantité demandée n'est pas disponible actuellement. ";
-            foreach ($stockErrors as $error) {
-                $message .= "Le stock disponible pour le produit {$error['nom']} est de {$error['stock_disponible']} unités. ";
-            }
-            $message .= "Nous travaillons sur le réapprovisionnement dans les 2 jours suivants.";
-            
-            return response()->json([
-                'success' => false,
-                'message' => $message,
-                'stock_errors' => $stockErrors
-            ], 400);
-        }
+        
+        $statut = $allProductsAvailable ? 'terminee' : 'en_attente';
 
         DB::beginTransaction();
         
         try {
-            // Création de la commande
+            // Création de la commande avec le statut approprié
             $commande = Commande::create([
                 'user_id' => $request->user()->id,
                 'date_commande' => now(),
-                'statut' => 'en_attente',
+                'statut' => $statut,
                 'total' => $total,
                 'commentaire' => $request->commentaire,
                 'moyen_paiement' => $request->moyen_paiement
             ]);
 
-            // Ajout des produits à la commande ET mise à jour du stock
+            // Ajout des produits à la commande ET mise à jour du stock si disponible
             foreach ($request->produits as $produit) {
                 $product = Product::findOrFail($produit['product_id']);
                 
@@ -112,8 +96,10 @@ class CommandeController extends Controller
                     'quantite' => $produit['quantite']
                 ]);
                 
-                // Soustraire la quantité du stock actuel
-                $product->decrement('stock_actuel', $produit['quantite']);
+                // Soustraire la quantité du stock actuel seulement si le produit est disponible
+                if ($product->stock_actuel >= $produit['quantite']) {
+                    $product->decrement('stock_actuel', $produit['quantite']);
+                }
             }
 
             DB::commit();
@@ -122,9 +108,13 @@ class CommandeController extends Controller
                 $query->select('products.id', 'products.nom', 'products.prix_unitaire');
             }]);
 
+            $message = $statut === 'terminee' 
+                ? 'Commande créée avec succès et stock mis à jour' 
+                : 'Commande créée avec succès. Certains produits ne sont pas disponibles en stock suffisant, la commande est en attente.';
+
             return response()->json([
                 'success' => true,
-                'message' => 'Commande créée avec succès et stock mis à jour',
+                'message' => $message,
                 'data' => $commande
             ], 201);
 
@@ -188,53 +178,34 @@ class CommandeController extends Controller
             // Récupérer les anciens produits pour restaurer le stock
             $oldProducts = $commande->products;
             
-            // Restaurer le stock des anciens produits
-            foreach ($oldProducts as $oldProduct) {
-                $oldProduct->increment('stock_actuel', $oldProduct->pivot->quantite);
+            // Restaurer le stock des anciens produits (seulement si la commande était terminée)
+            if ($commande->statut === 'terminee') {
+                foreach ($oldProducts as $oldProduct) {
+                    $oldProduct->increment('stock_actuel', $oldProduct->pivot->quantite);
+                }
             }
 
-            // Vérification du stock pour les nouveaux produits
-            $stockErrors = [];
+            // Vérification du stock pour les nouveaux produits et détermination du statut
             $total = 0;
+            $allProductsAvailable = true;
             
             foreach ($request->produits as $produit) {
                 $product = Product::findOrFail($produit['product_id']);
                 
                 if ($product->stock_actuel < $produit['quantite']) {
-                    $stockErrors[] = [
-                        'product_id' => $product->id,
-                        'nom' => $product->nom,
-                        'quantite_demandee' => $produit['quantite'],
-                        'stock_disponible' => $product->stock_actuel
-                    ];
-                } else {
-                    $total += $product->prix_unitaire * $produit['quantite'];
+                    $allProductsAvailable = false;
                 }
+                
+                $total += $product->prix_unitaire * $produit['quantite'];
             }
 
-            if (!empty($stockErrors)) {
-                // Restaurer le stock des anciens produits si erreur
-                foreach ($oldProducts as $oldProduct) {
-                    $oldProduct->decrement('stock_actuel', $oldProduct->pivot->quantite);
-                }
-                
-                $message = "La quantité demandée n'est pas disponible actuellement. ";
-                foreach ($stockErrors as $error) {
-                    $message .= "Le stock disponible pour le produit {$error['nom']} est de {$error['stock_disponible']} unités. ";
-                }
-                $message .= "Nous travaillons sur le réapprovisionnement dans les 2 jours suivants.";
-                
-                DB::rollback();
-                return response()->json([
-                    'success' => false,
-                    'message' => $message,
-                    'stock_errors' => $stockErrors
-                ], 400);
-            }
+            
+            $nouveauStatut = $allProductsAvailable ? 'terminee' : 'en_attente';
 
             // Mise à jour de la commande
             $commande->update([
                 'total' => $total,
+                'statut' => $nouveauStatut,
                 'commentaire' => $request->commentaire ?? $commande->commentaire,
                 'moyen_paiement' => $request->moyen_paiement ?? $commande->moyen_paiement
             ]);
@@ -250,8 +221,10 @@ class CommandeController extends Controller
                     'quantite' => $produit['quantite']
                 ]);
                 
-                // Soustraire la quantité du stock actuel
-                $product->decrement('stock_actuel', $produit['quantite']);
+                // Soustraire la quantité du stock actuel seulement si disponible
+                if ($product->stock_actuel >= $produit['quantite']) {
+                    $product->decrement('stock_actuel', $produit['quantite']);
+                }
             }
 
             DB::commit();
@@ -260,9 +233,13 @@ class CommandeController extends Controller
                 $query->select('products.id', 'products.nom', 'products.prix_unitaire');
             }]);
 
+            $message = $nouveauStatut === 'terminee' 
+                ? 'Commande modifiée avec succès et stock mis à jour' 
+                : 'Commande modifiée avec succès. Certains produits ne sont pas disponibles en stock suffisant, la commande est en attente.';
+
             return response()->json([
                 'success' => true,
-                'message' => 'Commande modifiée avec succès et stock mis à jour',
+                'message' => $message,
                 'data' => $commande
             ]);
 
@@ -291,10 +268,12 @@ class CommandeController extends Controller
         DB::beginTransaction();
         
         try {
-            // Restaurer le stock des produits avant suppression
-            $products = $commande->products;
-            foreach ($products as $product) {
-                $product->increment('stock_actuel', $product->pivot->quantite);
+            // Restaurer le stock des produits avant suppression (seulement si la commande était terminée)
+            if ($commande->statut === 'terminee') {
+                $products = $commande->products;
+                foreach ($products as $product) {
+                    $product->increment('stock_actuel', $product->pivot->quantite);
+                }
             }
 
             $commande->delete();
